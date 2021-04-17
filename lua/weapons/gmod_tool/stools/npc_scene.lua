@@ -159,7 +159,7 @@ local function ParseDirSingle( t, dir, ext )
         for _, fdir in pairs( dirs ) do
             local n = t:AddNode( fdir )
             ParseDirSingle( n, dir..fdir.."/", ext )
-            n:SetExpanded( true )
+            n:SetExpanded( false )
         end
         for k,v in pairs( files ) do
             local n = t:AddNode( v )
