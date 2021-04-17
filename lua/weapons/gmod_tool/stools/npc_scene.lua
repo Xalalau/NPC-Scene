@@ -261,6 +261,7 @@ local function ParseDir( t, dir, ext )
         for k,v in pairs( files ) do
             local n = t:AddNode( v )
             local arq = dir..v
+            n:SetIcon("icon16/page_white.png")
             n.DoClick = function() RunConsoleCommand( "npc_scene_scene", arq ) end
         end 
     end
@@ -278,6 +279,7 @@ if ( CLIENT ) then
         ctrl:SetPadding( 5 )
         ctrl:SetSize( 300, 675 )
         ctrl:SetPos( 0, 25 )
+        ctrl:SetBackgroundColor( Color( 255, 255, 255, 255 ) )
 end
 
 local initialized
