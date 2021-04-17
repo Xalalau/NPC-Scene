@@ -144,7 +144,7 @@ if CLIENT then
     net.Receive("npc_scene_set_ent_table", function()
         local ent_table = net.ReadTable()
         
-        for _,v in pairs(ent_table) do
+        for _,v in ipairs(ent_table) do
             v.ent.npcscene = v.npcscene
         
             table.insert(npcscene_ent_table, v.ent.npcscene.Index_key, v.ent)
@@ -251,7 +251,7 @@ local function ScanDir(t, dir, ext)
 
     local files, dirs = file.Find(dir.."*", "GAME")
 
-    for _, fdir in pairs(dirs) do
+    for _, fdir in ipairs(dirs) do
         local n = t:AddNode(fdir)
         local clicked = false
 
@@ -264,7 +264,7 @@ local function ScanDir(t, dir, ext)
         end
     end
 
-    for k,v in pairs(files) do
+    for k,v in ipairs(files) do
         local n = t:AddNode(v)
         local arq = dir..v
 
@@ -407,7 +407,7 @@ function TOOL:RightClick(tr)
 
         -- Register the entity in our internal table.
         table.insert(npcscene_ent_table, ent:EntIndex(), ent)
-        for _, v in pairs(player.GetAll()) do
+        for _, v in ipairs(player.GetAll()) do
             net.Start("npc_scene_set_ent_table")
             net.WriteTable({ { ent = ent, npcscene = ent.npcscene } })
             net.Send(v)
