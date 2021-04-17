@@ -58,60 +58,60 @@ local npcscene_ent_table = {}
 
 -- Stops the scene loops.
 local function StopTimer(Index_loop)
-    if SERVER then
-        if Index_loop then
-            timer.Stop(Index_loop)
-        end
+    if CLIENT then return end
+
+    if Index_loop then
+        timer.Stop(Index_loop)
     end
 end
 
 -- Plays a scene with or without loops.
 local function StartScene(ent)
-    if SERVER then
-        ent.npcscene.Active = 1
+    if CLIENT then return end
 
-        -- Gets the animationg lenght and plays it.
-        local lenght = ent:PlayScene(ent.npcscene.Scene) 
-        local Index_loop = ent.npcscene.Index_loop
-        local Index_key = ent.npcscene.Index_key
+    ent.npcscene.Active = 1
 
-        -- Waits for the next play (if we are using loops).
-        if ent.npcscene.Loop != 0 then
-            timer.Create(Index_loop, lenght, ent.npcscene.Loop, function()
-                if not ent:IsValid() then
-                    npcscene_ent_table[Index_key] = nil
-                    StopTimer(Index_loop)
-                elseif ent.npcscene.Loop == 0 then
-                    npcscene_ent_table[Index_key] = nil
-                    ent.npcscene.Active = 0
-                    StopTimer(Index_loop)
-                else
-                    ent:PlayScene(ent.npcscene.Scene)
-                    ent.npcscene.Loop = ent.npcscene.Loop - 1
-                end
-            end)
-        end
+    -- Gets the animationg lenght and plays it.
+    local lenght = ent:PlayScene(ent.npcscene.Scene) 
+    local Index_loop = ent.npcscene.Index_loop
+    local Index_key = ent.npcscene.Index_key
+
+    -- Waits for the next play (if we are using loops).
+    if ent.npcscene.Loop != 0 then
+        timer.Create(Index_loop, lenght, ent.npcscene.Loop, function()
+            if not ent:IsValid() then
+                npcscene_ent_table[Index_key] = nil
+                StopTimer(Index_loop)
+            elseif ent.npcscene.Loop == 0 then
+                npcscene_ent_table[Index_key] = nil
+                ent.npcscene.Active = 0
+                StopTimer(Index_loop)
+            else
+                ent:PlayScene(ent.npcscene.Scene)
+                ent.npcscene.Loop = ent.npcscene.Loop - 1
+            end
+        end)
     end
 end
 
 -- Reloads NPCs so we can apply new scenes.
 local function ReloadEntity(ply, ent)
-    if SERVER then
-        local Dupe = {}
+    if CLIENT then return end
 
-        Dupe = duplicator.Copy(ent)
-        SafeRemoveEntity(ent)
-        duplicator.Paste(ply, Dupe.Entities, Dupe.Constraints)
+    local Dupe = {}
 
-        ent = ply:GetEyeTrace().Entity
+    Dupe = duplicator.Copy(ent)
+    SafeRemoveEntity(ent)
+    duplicator.Paste(ply, Dupe.Entities, Dupe.Constraints)
 
-        undo.Create("NPC ")
-            undo.AddEntity(ent)
-            undo.SetPlayer(ply)
-        undo.Finish()
+    ent = ply:GetEyeTrace().Entity
 
-        return ent
-    end
+    undo.Create("NPC ")
+        undo.AddEntity(ent)
+        undo.SetPlayer(ply)
+    undo.Finish()
+
+    return ent
 end
 
 -- Check if a entity is valid (NPC).
@@ -127,8 +127,8 @@ end
 -- NET FUNCTIONS
 -- --------------
 
--- Plays scenes with keys associated.
 if SERVER then
+    -- Plays scenes with keys associated.
     net.Receive("npc_scene_play", function()
         local ent = net.ReadEntity()
         local multiple = net.ReadInt(2)
@@ -139,8 +139,8 @@ if SERVER then
     end)
 end
 
--- Sets the ent table.
 if CLIENT then
+    -- Sets the ent table.
     net.Receive("npc_scene_set_ent_table", function()
         local ent_table = net.ReadTable()
         
@@ -150,10 +150,8 @@ if CLIENT then
             table.insert(npcscene_ent_table, v.ent.npcscene.Index_key, v.ent)
         end
     end)
-end
 
--- Sets the keys ("Tick" hook).
-if CLIENT then
+    -- Sets the keys ("Tick" hook).
     net.Receive("npc_scene_key_hook", function(_, ply)
         local ent = net.ReadEntity()
         local Index_key = ent.npcscene.Index_key
@@ -249,30 +247,30 @@ local ctrl
 
 -- Populates the scenes list in Singleplayer.
 local function ScanDir(t, dir, ext)
-    if CLIENT then
-        local files, dirs = file.Find(dir.."*", "GAME")
+    if SERVER then return end
 
-        for _, fdir in pairs(dirs) do
-            local n = t:AddNode(fdir)
-            local clicked = false
+    local files, dirs = file.Find(dir.."*", "GAME")
 
-            n.DoClick = function()
-                if clicked then return end
+    for _, fdir in pairs(dirs) do
+        local n = t:AddNode(fdir)
+        local clicked = false
 
-                clicked = true
-                ScanDir(n, dir..fdir.."/", ext)
-                n:SetExpanded(true)
-            end
+        n.DoClick = function()
+            if clicked then return end
+
+            clicked = true
+            ScanDir(n, dir..fdir.."/", ext)
+            n:SetExpanded(true)
         end
-
-        for k,v in pairs(files) do
-            local n = t:AddNode(v)
-            local arq = dir..v
-
-            n:SetIcon("icon16/page_white.png")
-            n.DoClick = function() RunConsoleCommand("npc_scene_scene", arq) end
-        end 
     end
+
+    for k,v in pairs(files) do
+        local n = t:AddNode(v)
+        local arq = dir..v
+
+        n:SetIcon("icon16/page_white.png")
+        n.DoClick = function() RunConsoleCommand("npc_scene_scene", arq) end
+    end 
 end
 
 if CLIENT then
@@ -292,19 +290,18 @@ end
 
 local initialized
 local function ListScenes()
-    if CLIENT then
-        if not initialized then
-            local node = ctrl:AddNode("Scenes! (click one to select)")
+    if SERVER then return end
 
-            ScanDir(node, "scenes/", ".vcd")
-            node:SetExpanded(true)
+    if not initialized then
+        local node = ctrl:AddNode("Scenes! (click one to select)")
 
-            initialized = true
-        end
-
-        SceneListPanel:SetVisible(true)
-        SceneListPanel:MakePopup()
+        ScanDir(node, "scenes/", ".vcd")
+        node:SetExpanded(true)
+        initialized = true
     end
+
+    SceneListPanel:SetVisible(true)
+    SceneListPanel:MakePopup()
 end
 
 if CLIENT then
