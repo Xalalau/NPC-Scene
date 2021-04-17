@@ -98,11 +98,11 @@ end
 local function ReloadEntity(ply, ent)
     if CLIENT then return end
 
-    local Dupe = {}
+    local dup = {}
 
-    Dupe = duplicator.Copy(ent)
+    dup = duplicator.Copy(ent)
     SafeRemoveEntity(ent)
-    duplicator.Paste(ply, Dupe.Entities, Dupe.Constraints)
+    duplicator.Paste(ply, dup.Entities, dup.Constraints)
 
     ent = ply:GetEyeTrace().Entity
 
