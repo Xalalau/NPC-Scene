@@ -10,9 +10,9 @@ Link: https://github.com/xalalau/GMod/tree/master/NPC%20Scene
 
 ]]--
 
--- ----------
+-- --------------
 -- TOOL SETUP
--- ----------
+-- --------------
 
 TOOL.Category = "Poser"
 TOOL.Name = "#Tool.npc_scene.name"
@@ -39,51 +39,22 @@ if ( CLIENT ) then
     language.Add( "Tool.npc_scene.reload", "Reload to stop a scene." )
 end
 
--- -----------
+if ( SERVER ) then
+    util.AddNetworkString( "net_set_ent_table" )
+    util.AddNetworkString( "npc_scene_key_hook" )
+    util.AddNetworkString( "npc_scene_play" )
+end
+
+-- --------------
 -- GLOBAL VARS
--- -----------
+-- --------------
 
 -- Table for controlling keys, NPC reloading and name printing.
 local npcscene_ent_table = {}
--- Table for listing the scenes mounted in the server.
-local npcscene_scenes = {}
-local npcscene_scenes_json = ""
--- Client Derma.
-local SceneListPanel
-local ctrl
 
--- -----------
--- DERMA SETUP
--- -----------
-
-if ( CLIENT ) then
-    SceneListPanel = vgui.Create( "DFrame" )
-        SceneListPanel:SetTitle( "Scenes" )
-        SceneListPanel:SetSize( 300, 700 )
-        SceneListPanel:SetPos( 10, 10 )
-        SceneListPanel:SetDeleteOnClose( false )
-        SceneListPanel:SetVisible( false )
-
-    ctrl = vgui.Create( "DTree", SceneListPanel )
-        ctrl:SetPadding( 5 )
-        ctrl:SetSize( 300, 675 )
-        ctrl:SetPos( 0, 25 )
-end
-
-local function ListScenes()
-    if ( CLIENT ) then
-        SceneListPanel:SetVisible( true )
-        SceneListPanel:MakePopup()
-    end
-end
-
-if ( CLIENT ) then
-    concommand.Add( "npc_scene_list", ListScenes )
-end
-
--- -----------------
--- GENERAL FUNCTIONS
--- -----------------
+-- --------------
+-- GENERAL
+-- --------------
 
 -- Stops the scene loops.
 local function NPCSceneTimerStop( Index_loop )
@@ -152,83 +123,9 @@ local function IsValidEnt( tr )
     return false
 end
 
--- Populates the scenes list in Singleplayer.
-local function ParseDirSingle( t, dir, ext )
-    if ( CLIENT ) then
-        local files, dirs = file.Find( dir.."*", "GAME" )
-        for _, fdir in pairs( dirs ) do
-            local n = t:AddNode( fdir )
-            ParseDirSingle( n, dir..fdir.."/", ext )
-            n:SetExpanded( false )
-        end
-        for k,v in pairs( files ) do
-            local n = t:AddNode( v )
-            local arq = dir..v
-            n.DoClick = function() RunConsoleCommand( "npc_scene_scene", arq ) end
-        end 
-    end
-end
-
--- Prepares the scenes table in Multiplayer.
-local function ParseDirMulti( sctable, dir, ext )
-    if ( SERVER ) then
-        local files, dirs = file.Find( dir .. "*" , "GAME" )
-        for _, fdir in pairs( dirs ) do
-            sctable[fdir] = {}
-            ParseDirMulti( sctable[fdir], dir .. fdir .. "/", ext )
-        end
-        for k,v in pairs( files ) do
-            if ( string.GetExtensionFromFilename( v ) == "vcd" ) then
-                local arq = dir .. v
-                local data = { File = v, Path = arq }
-                table.insert( sctable, data )
-            end
-        end
-    end
-end
-
--- Populates the scenes list in Multiplayer.
-local function SetScenesMulti( t, sctable )
-    if ( CLIENT ) then
-        for k, v in pairs( sctable ) do
-            if ( v.File ) then
-                local n = t:AddNode( v.File )
-                n.DoClick = function()
-                    RunConsoleCommand( "npc_scene_scene", v.Path )
-                end
-            else
-                local n = t:AddNode( k )
-                SetScenesMulti( n, v )
-            end
-        end
-    end
-end
-
 -- --------------
--- Server Loading
--- --------------
-
-if ( SERVER ) then
-    if not ( game.SinglePlayer() ) then
-        ParseDirMulti( npcscene_scenes, "scenes/", ".vcd" )
-        npcscene_scenes_json = util.TableToJSON( npcscene_scenes )
-    end
-end
-
--- ---------
--- NET SETUP
--- ---------
-
-if ( SERVER ) then
-    util.AddNetworkString( "net_set_ent_table" )
-    util.AddNetworkString( "net_set_scenes_table" )
-    util.AddNetworkString( "npc_scene_key_hook" )
-    util.AddNetworkString( "npc_scene_play" )
-end
-
--- -------------
 -- NET FUNCTIONS
--- -------------
+-- --------------
 
 -- Plays scenes with keys associated.
 if ( SERVER ) then
@@ -253,19 +150,6 @@ if ( CLIENT ) then
             table.insert( npcscene_ent_table, v.ent.npcscene.Index_key, v.ent )
         end
     end )
-end
-
--- Sets the scenes table for new palyers.
-if ( CLIENT ) then
-    net.Receive("net_set_scenes_table",function()
-        local chunk = net.ReadString()
-        local last = net.ReadString()
-
-        npcscene_scenes_json = npcscene_scenes_json .. chunk
-        if ( last == "LAST" ) then
-            npcscene_scenes = util.JSONToTable( npcscene_scenes_json )
-        end
-    end)
 end
 
 -- Sets the keys ("Tick" hook).
@@ -301,9 +185,9 @@ if ( CLIENT ) then
     end )
 end
 
--- -------------
--- INITIAL HOOKS
--- -------------
+-- --------------
+-- HOOKS
+-- --------------
 
 -- Sets the entity and scene tables on new players.
 if ( SERVER ) then
@@ -320,26 +204,6 @@ if ( SERVER ) then
                 net.WriteTable( t )
                 net.Send( ply )
             end
-
-            -- Scenes table (It's big, so I'm sending in json chunks).
-            local chunks = {}
-            local curTable = ""
-            curTable = npcscene_scenes_json
-            for i = 1,math.ceil( string.len( npcscene_scenes_json ) / 1024 ),1 do
-                table.insert( chunks, string.sub( curTable, 1, 1024 ) )
-                curTable = string.sub( curTable, 1025 )
-            end
-            for i,v in pairs( chunks ) do
-                timer.Create( "NPC_ORB_" .. i, i * 0.05, 1, function() -- Timer to solve "overflowed reliable buffer" error.
-                    net.Start( "net_set_scenes_table" )
-                    net.WriteString( v )
-                    if ( i == #chunks ) then
-                        net.WriteString( "LAST" )
-                    end
-                    net.Send( ply )
-                end )
-            end
-
         end )
     end )
 end
@@ -373,7 +237,72 @@ if ( CLIENT ) then
 end
 
 -- --------------
--- TOOL FUNCTIONS
+-- FILES
+-- --------------
+
+-- Client Derma.
+local SceneListPanel
+local ctrl
+
+-- Populates the scenes list in Singleplayer.
+local function ParseDir( t, dir, ext )
+    if ( CLIENT ) then
+        local files, dirs = file.Find( dir.."*", "GAME" )
+        for _, fdir in pairs( dirs ) do
+            local n = t:AddNode( fdir )
+            local clicked = false
+            n.DoClick = function()
+                if clicked then return end
+                clicked = true
+                ParseDir( n, dir..fdir.."/", ext )
+                n:SetExpanded( true )
+            end
+        end
+        for k,v in pairs( files ) do
+            local n = t:AddNode( v )
+            local arq = dir..v
+            n.DoClick = function() RunConsoleCommand( "npc_scene_scene", arq ) end
+        end 
+    end
+end
+
+if ( CLIENT ) then
+    SceneListPanel = vgui.Create( "DFrame" )
+        SceneListPanel:SetTitle( "Scenes" )
+        SceneListPanel:SetSize( 300, 700 )
+        SceneListPanel:SetPos( 10, 10 )
+        SceneListPanel:SetDeleteOnClose( false )
+        SceneListPanel:SetVisible( false )
+
+    ctrl = vgui.Create( "DTree", SceneListPanel )
+        ctrl:SetPadding( 5 )
+        ctrl:SetSize( 300, 675 )
+        ctrl:SetPos( 0, 25 )
+end
+
+local initialized
+local function ListScenes()
+    if ( CLIENT ) then
+        if not initialized then
+            local node = ctrl:AddNode( "Scenes! (click one to select)" )
+
+            ParseDir( node, "scenes/", ".vcd" )
+            node:SetExpanded(true)
+
+            initialized = true
+        end
+
+        SceneListPanel:SetVisible( true )
+        SceneListPanel:MakePopup()
+    end
+end
+
+if ( CLIENT ) then
+    concommand.Add( "npc_scene_list", ListScenes )
+end
+
+-- --------------
+-- TOOLGUN
 -- --------------
 
 -- Plays scenes.
@@ -505,7 +434,10 @@ function TOOL:Reload( tr )
     end
 end
 
--- Builds CPanel.
+-- --------------
+-- CPanel
+-- --------------
+
 if ( CLIENT ) then
     function TOOL.BuildCPanel( CPanel )
         CPanel:AddControl ( "Header"  , { Text  = '#Tool.npc_scene.name', Description = '#Tool.npc_scene.desc' } )
@@ -521,16 +453,5 @@ if ( CLIENT ) then
         CPanel:AddControl ( "CheckBox", { Label = "Show Actors' Names Over Their Heads", Command = "npc_scene_render" } )
         CPanel:Help       ("")
         CPanel:AddControl ( "Button" , { Text  = "List Scenes", Command = "npc_scene_list" } )
-        local node = ctrl:AddNode( "Scenes! (click one to select)" )
-        if ( game.SinglePlayer() ) then
-            ParseDirSingle( node, "scenes/", ".vcd" )
-        else
-            timer.Create( "LoadScenes", 1, 0, function() -- Timer to ensure the loading of the scenes list on the client.
-                if ( table.Count( npcscene_scenes ) > 0 ) then
-                    SetScenesMulti( node, npcscene_scenes )
-                    timer.Stop( "LoadScenes" )
-                end
-            end )
-        end
     end
 end
