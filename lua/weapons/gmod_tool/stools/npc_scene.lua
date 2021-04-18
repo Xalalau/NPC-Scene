@@ -135,8 +135,9 @@ if CLIENT then
         local entsTable = net.ReadTable()
         
         for _,modifiedEnt in ipairs(entsTable) do
-            modifiedEnt.ent.npcscene = modifiedEnt.npcscene
-        
+            if not modifiedEnt.npcscene then continue end
+
+            modifiedEnt.ent.npcscene = modifiedEnt.npcscene       
             table.insert(modifiedEntsTable, modifiedEnt.ent.npcscene.index, modifiedEnt.ent)
         end
     end)
@@ -352,7 +353,9 @@ function TOOL:LeftClick(tr)
 
     timer.Simple(0.25, function() -- Timer to avoid spawning errors.
         ent.npcscene = data
-        
+
+        if not ent.npcscene then return end
+
         -- Registers the entity in our internal table.
         table.insert(modifiedEntsTable, ent:EntIndex(), ent)
         net.Start("npc_scene_set_ent_table")
