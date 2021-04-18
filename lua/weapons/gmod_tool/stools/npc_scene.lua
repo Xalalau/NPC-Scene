@@ -221,7 +221,7 @@ local function ListScenes()
 
     if not initialized then
         local width, height = 300, 700
-        local padding = 25
+        local padding = 35
 
         sceneListPanel = vgui.Create("DFrame")
             sceneListPanel:SetTitle("Scenes")
