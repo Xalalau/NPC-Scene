@@ -109,6 +109,10 @@ function NPCS:PlayScene(ply, index)
                 npc:SetNWInt("npcscene_loop", npc:GetNWInt("npcscene_loop") - 1)
             end
         end)
+    else
+        timer.Simple(lenght, function()
+            npc:SetNWBool("npcscene_active", false)
+        end)
     end
 end
 
