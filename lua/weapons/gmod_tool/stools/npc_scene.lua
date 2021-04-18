@@ -1,3 +1,9 @@
+--[[
+    NPC Scene - by Xalalau Xubilozo
+
+    MIT License 2021
+]]
+
 -- --------------
 -- Base
 -- --------------
