@@ -141,7 +141,7 @@ local function InitModifiedEntsTable(ply)
         end
 
         net.Start("npc_scene_set_ent_table")
-        net.WriteTable(currentTableFormated)
+            net.WriteTable(currentTableFormated)
         net.Send(ply)
     end
 end
