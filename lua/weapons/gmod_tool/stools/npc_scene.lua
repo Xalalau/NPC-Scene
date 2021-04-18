@@ -56,15 +56,6 @@ local npcscene_ent_table = {}
 -- GENERAL
 -- --------------
 
--- Stops the scene loops.
-local function StopTimer(timerName)
-    if CLIENT then return end
-
-    if timerName then
-        timer.Stop(timerName)
-    end
-end
-
 -- Plays a scene with or without loops.
 local function StartScene(ent)
     if CLIENT then return end
@@ -81,11 +72,11 @@ local function StartScene(ent)
         timer.Create(tostring(ent) .. Index_loop, lenght, ent.npcscene.Loop, function()
             if not ent:IsValid() then
                 npcscene_ent_table[Index_key] = nil
-                StopTimer(tostring(ent) .. Index_loop)
+                timer.Stop(tostring(ent) .. Index_loop)
             elseif ent.npcscene.Loop == 0 then
                 npcscene_ent_table[Index_key] = nil
                 ent.npcscene.Active = 0
-                StopTimer(tostring(ent) .. Index_loop)
+                timer.Stop(tostring(ent) .. Index_loop)
             else
                 ent:PlayScene(ent.npcscene.Scene)
                 ent.npcscene.Loop = ent.npcscene.Loop - 1
@@ -344,7 +335,7 @@ function TOOL:LeftClick(tr)
     -- Reloads the scenes (by deleting the loops and reloading the NPCs).
     if ent.npcscene then 
         if ent.npcscene.Active == 1 and apply_multiple_times == 0 then
-            StopTimer(ent.npcscene.Index_loop)
+            timer.Stop(tostring(ent) .. ent.npcscene.Index_loop)
             ent = ReloadEntity(ply, ent)
         end
     end
@@ -432,7 +423,7 @@ function TOOL:Reload(tr)
                     ent:SetName("")
                 end
 
-                StopTimer(ent.npcscene.Index_loop)
+                timer.Stop(tostring(ent) .. ent.npcscene.Index_loop)
                 ReloadEntity(self:GetOwner(), ent)
             end)
         end
