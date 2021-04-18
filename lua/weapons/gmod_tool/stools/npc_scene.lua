@@ -27,6 +27,12 @@ if SERVER then
     util.AddNetworkString("npc_scene_play")
 end
 
+if SERVER then
+    net.Receive("npc_scene_play", function(ply)
+        PlayScene(ply, net.ReadInt(16))
+    end)
+end
+
 -- Share the scene values between server and client
 local function SetNWVars(npc, sceneData)
     if sceneData.active then npc:SetNWBool("npcscene_active", sceneData.active) end
@@ -38,8 +44,14 @@ local function SetNWVars(npc, sceneData)
 end
 
 -- Play a scene
-local function PlayScene(npc)
+local function PlayScene(ply, index)
     if CLIENT then return end
+
+    local multiple = ply:GetInfo("npc_scene_multiple") == "1" and true or false
+    local npc = ents.GetByIndex(index)
+
+    -- When a animation is running only start more animations if the "multiple" checkbox is checked
+    if npc:GetNWBool("npcscene_active") and not multiple then return end
 
     npc:SetNWBool("npcscene_active", true)
 
@@ -122,19 +134,6 @@ end
 -- --------------
 -- NET FUNCTIONS
 -- --------------
-
-if SERVER then
-    -- Play a scene by key 
-    net.Receive("npc_scene_play", function()
-        local index = net.ReadInt(16)
-        local multiple = net.ReadInt(2)
-        local npc = ents.GetByIndex(index)
-
-        if not npc:GetNWBool("npcscene_active") or multiple == 1 then
-            PlayScene(npc)
-        end
-    end)
-end
 
 if CLIENT then
     -- Set a key association
@@ -262,7 +261,7 @@ function TOOL:LeftClick(tr)
     if npc:GetNWInt("npcscene_index") then
         -- Apply the scene on top scene if it's configured to do so
         if multiple and npc:GetNWString("npcscene_path") == path then
-            PlayScene(npc)
+            PlayScene(ply, npc:GetNWInt("npcscene_index"))
 
             return true
         end
@@ -293,11 +292,11 @@ function TOOL:LeftClick(tr)
 
     -- Play the scene
     if sceneData.key == 0 then
-        PlayScene(npc)
+        PlayScene(ply, sceneData.index)
     -- Prepare the scene to be played by key
     else
         net.Start("npc_scene_hook_key")
-            net.WriteInt(npc:EntIndex(), 16)
+            net.WriteInt(sceneData.index, 16)
         net.Send(ply)
     end
 
