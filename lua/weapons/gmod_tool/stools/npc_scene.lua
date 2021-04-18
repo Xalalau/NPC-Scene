@@ -41,6 +41,7 @@ local NPCS = {}
 if SERVER then
     util.AddNetworkString("npc_scene_hook_key")
     util.AddNetworkString("npc_scene_play")
+    util.AddNetworkString("npc_scene_render_actor")
 
     net.Receive("npc_scene_play", function(_, ply)
         NPCS:PlayScene(ply, net.ReadInt(16))
@@ -50,6 +51,10 @@ end
 if CLIENT then
     net.Receive("npc_scene_hook_key", function()
         NPCS:SetKey(net.ReadInt(16))
+    end)
+
+    net.Receive("npc_scene_render_actor", function()
+        NPCS:RenderActorName(net.ReadInt(16))
     end)
 end
 
@@ -155,8 +160,10 @@ function NPCS:ReloadNPC(ply, npc)
 end
 
 -- Render NPC names over their heads
-function NPCS:RenderActorName(npc)
+function NPCS:RenderActorName(index)
     if SERVER then return end
+
+    local npc = ents.GetByIndex(index)
 
     npc.RenderOverride = function(self)
         self:DrawModel()
@@ -325,23 +332,25 @@ end
 -- Set an actor name
 function TOOL:RightClick(tr)
     if not toolGunChecks(tr) then return false end
-
-    local npc = tr.Entity
-
-    -- Render the name on the client
-    NPCS:RenderActorName(npc)
-
     if CLIENT then return true end
+
+    local ply = self:GetOwner()    
+    local npc = tr.Entity
 
     -- Add the name to the entity
     local sceneData = {
-        index = not npc:GetNWInt("npcscene_index") and npc:EntIndex() or nil,
+        index = npc:GetNWInt("npcscene_index") == 0 and npc:EntIndex() or nil,
         actor = self:GetClientInfo("actor")
     }
 
     npc:SetName(sceneData.actor)
 
     NPCS:SetNWVars(npc, sceneData)
+
+    -- Render the name on the client
+    net.Start("npc_scene_render_actor")
+        net.WriteInt(sceneData.index or npc:GetNWInt("npcscene_index"), 16)
+    net.Send(ply)
 
     return true
 end
