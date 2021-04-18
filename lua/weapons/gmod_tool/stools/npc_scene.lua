@@ -128,8 +128,8 @@ local function RenderActorName()
                     screenPos = drawPos:ToScreen()
                 end
 
-                if ent.npcscene.name != "" and LocalPlayer():GetPos():Distance(ent:GetPos()) < 300 then
-                    draw.DrawText(ent.npcscene.name, "TargetID", screenPos.x - string.len(ent.npcscene.name) * 4, screenPos.y - 15, Color(255, 255, 255, 255))
+                if ent.npcscene.actor != "" and LocalPlayer():GetPos():Distance(ent:GetPos()) < 300 then
+                    draw.DrawText(ent.npcscene.actor, "TargetID", screenPos.x - string.len(ent.npcscene.actor) * 4, screenPos.y - 15, Color(255, 255, 255, 255))
                 end
             end
         end
@@ -304,7 +304,7 @@ function TOOL:LeftClick(tr)
     local ply = self:GetOwner()
     local ent = tr.Entity
     local scene = string.gsub(self:GetClientInfo("scene"), ".vcd", "")
-    local name = ""
+    local actor = ""
     local multiple = self:GetClientNumber("multiple")
 
     -- Get the scene configuration
@@ -313,7 +313,7 @@ function TOOL:LeftClick(tr)
         index  = ent:EntIndex(),
         loop   = self:GetClientNumber("loop"),
         scene  = scene,
-        name   = name,
+        actor   = actor,
         key    = self:GetClientNumber("key"),
     }
 
@@ -327,8 +327,8 @@ function TOOL:LeftClick(tr)
         end
 
         -- Get the actor name if there's one
-        if ent.npcscene.name then
-            name = ent.npcscene.name
+        if ent.npcscene.actor then
+            actor = ent.npcscene.actor
         end
 
         -- Reload the scenes by deleting the loops and reloading the NPCs
@@ -372,18 +372,18 @@ function TOOL:RightClick(tr)
     end 
 
     local ent = tr.Entity
-    local actorName = self:GetClientInfo("actor")
+    local actor = self:GetClientInfo("actor")
 
     timer.Simple(0.25, function() -- Timer to avoid spawning errors.
         -- Set the name
-        ent:SetName(actorName)
+        ent:SetName(actor)
 
         -- Add the name to the entity
         if not ent.npcscene then
             ent.npcscene = {}
             ent.npcscene.index  = ent:EntIndex()
         end
-        ent.npcscene.name = actorName
+        ent.npcscene.actor = actor
 
         -- Store the modified entity in modifiedEntsTable
         table.insert(modifiedEntsTable, ent:EntIndex(), ent)
@@ -409,7 +409,7 @@ function TOOL:Reload(tr)
     if ent.npcscene then 
         if SERVER then
             timer.Simple(0.25, function() -- Timer to avoid spawning errors.
-                if ent.npcscene.name then
+                if ent.npcscene.actor then
                     ent:SetName("")
                 end
 
