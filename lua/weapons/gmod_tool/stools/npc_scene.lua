@@ -187,21 +187,20 @@ if CLIENT then
     net.Receive("npc_scene_hook_key", function(_, ply)
         local ent = net.ReadEntity()
         local index = ent.npcscene.index
+        local hookName = "npc_scene" .. index
 
-        if hook.GetTable()[index] then
+        if hook.GetTable()["Tick"][hookName] then
             return
         end
 
-        local multiple = GetConVar("npc_scene_multiple"):GetInt()
-
-        hook.Add("Tick", "hook_" .. index, function()
+        hook.Add("Tick", hookName, function()
             if not ent:IsValid() then
                 modifiedEntsTable[index] = nil
-                hook.Remove("Tick", "hook_" .. index)
+                hook.Remove("Tick", hookName)
             elseif input.IsKeyDown(ent.npcscene.key) then
                 net.Start("npc_scene_play")
-                net.WriteEntity(ent)
-                net.WriteInt(multiple, 2)
+                    net.WriteEntity(ent)
+                    net.WriteInt(GetConVar("npc_scene_multiple"):GetInt(), 2)
                 net.SendToServer()
             end
         end)
