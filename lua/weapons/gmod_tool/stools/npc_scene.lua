@@ -27,12 +27,6 @@ if SERVER then
     util.AddNetworkString("npc_scene_play")
 end
 
-if SERVER then
-    net.Receive("npc_scene_play", function(ply)
-        PlayScene(ply, net.ReadInt(16))
-    end)
-end
-
 -- Share the scene values between server and client
 local function SetNWVars(npc, sceneData)
     if sceneData.active then npc:SetNWBool("npcscene_active", sceneData.active) end
@@ -41,6 +35,37 @@ local function SetNWVars(npc, sceneData)
     if sceneData.path then npc:SetNWString("npcscene_path", sceneData.path) end
     if sceneData.actor then npc:SetNWString("npcscene_actor", sceneData.actor) end
     if sceneData.key then npc:SetNWInt("npcscene_key", sceneData.key) end
+end
+
+-- Set a key association
+local function SetKey(index)
+    if SERVER then return end
+
+    local npc = ents.GetByIndex(index)
+    local hookName = "npc_scene" .. index
+
+    -- Don't recreate the hook for nothing
+    if hook.GetTable()["Tick"][hookName] then
+        return
+    end
+
+    hook.Add("Tick", hookName, function()
+        -- NPC is gone
+        if not npc:IsValid() then
+            hook.Remove("Tick", hookName)
+        -- Play scene
+        elseif input.IsKeyDown(npc:GetNWInt("npcscene_key")) then
+            net.Start("npc_scene_play")
+                net.WriteInt(npc:EntIndex(), 16)
+            net.SendToServer()
+        end
+    end)
+end
+
+if CLIENT then
+    net.Receive("npc_scene_hook_key", function()
+        SetKey(net.ReadInt(16))
+    end)
 end
 
 -- Play a scene
@@ -77,6 +102,12 @@ local function PlayScene(ply, index)
             end
         end)
     end
+end
+
+if SERVER then
+    net.Receive("npc_scene_play", function(_, ply)
+        PlayScene(ply, net.ReadInt(16))
+    end)
 end
 
 -- Remove our modifications from the npc
@@ -135,31 +166,6 @@ end
 -- NET FUNCTIONS
 -- --------------
 
-if CLIENT then
-    -- Set a key association
-    net.Receive("npc_scene_hook_key", function(_, ply)
-        local index = net.ReadInt(16)
-        local npc = ents.GetByIndex(index)
-        local hookName = "npc_scene" .. index
-
-        if hook.GetTable()["Tick"][hookName] then
-            return
-        end
-
-        hook.Add("Tick", hookName, function()
-            -- NPC is gone
-            if not npc:IsValid() then
-                hook.Remove("Tick", hookName)
-            -- Play scene
-            elseif input.IsKeyDown(npc:GetNWInt("npcscene_key")) then
-                net.Start("npc_scene_play")
-                    net.WriteInt(npc:EntIndex(), 16)
-                    net.WriteInt(GetConVar("npc_scene_multiple"):GetInt(), 2)
-                net.SendToServer()
-            end
-        end)
-    end)
-end
 
 -- --------------
 -- FILES
