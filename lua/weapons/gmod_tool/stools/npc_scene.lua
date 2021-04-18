@@ -284,7 +284,7 @@ function TOOL:LeftClick(tr)
     local multiple = self:GetClientNumber("multiple") == 1 and true or false
 
     -- Checks if there's a scene applied
-    if npc:GetNWInt("npcscene_index") then
+    if npc:GetNWInt("npcscene_index") > 0 then
         -- Apply the scene on top scene if it's configured to do so
         if multiple and npc:GetNWString("npcscene_path") == path then
             NPCS:PlayScene(ply, npc:GetNWInt("npcscene_index"))
@@ -293,7 +293,7 @@ function TOOL:LeftClick(tr)
         end
 
         -- Get the actor name if there's one
-        if npc:GetNWString("npcscene_actor") then
+        if npc:GetNWString("npcscene_actor") ~= "" then
             actor = npc:GetNWString("npcscene_actor")
         end
 
@@ -363,7 +363,7 @@ function TOOL:Reload(tr)
     local npc = tr.Entity
 
     -- Stop any loops and reload the NPC
-    if npc:GetNWInt("npcscene_index") then 
+    if npc:GetNWInt("npcscene_index") > 0 then
         if SERVER then
             timer.Stop(tostring(npc) .. npc:GetNWInt("npcscene_index"))
             NPCS:ReloadNPC(ply, npc)
