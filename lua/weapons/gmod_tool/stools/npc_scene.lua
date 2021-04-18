@@ -22,7 +22,6 @@ TOOL.ClientConVar["scene"] = "scenes/npc/Gman/gman_intro"
 TOOL.ClientConVar["actor"] = "Alyx"
 TOOL.ClientConVar["loop"] = 0
 TOOL.ClientConVar["key"] = 0
-TOOL.ClientConVar["start"] = 0
 TOOL.ClientConVar["multiple"] = 0
 TOOL.ClientConVar["render"] = 1
 TOOL.Information = {
@@ -152,13 +151,6 @@ if CLIENT then
         end
 
         local multiple = GetConVar("npc_scene_multiple"):GetInt()
-        
-        if ent.npcscene.start == 1 then
-            net.Start("npc_scene_play")
-            net.WriteEntity(ent)
-            net.WriteInt(multiple, 2)
-            net.SendToServer()
-        end
 
         hook.Add("Tick", "hook_" .. index, function()
             if not ent:IsValid() then
@@ -348,7 +340,6 @@ function TOOL:LeftClick(tr)
         scene  = scene,
         name   = name,
         key    = self:GetClientNumber("key"),
-        start  = self:GetClientNumber("start"),
     }
 
     timer.Simple(0.25, function() -- Timer to avoid spawning errors.
@@ -449,7 +440,6 @@ function TOOL.BuildCPanel(CPanel)
     end
     CPanel:AddControl ("Slider"  , { Label = "Loop", Type = "int", Min = "0", Max = "100", Command = "npc_scene_loop"})
     CPanel:AddControl ("CheckBox", { Label = "Apply Scenes Multiple Times", Command = "npc_scene_multiple" })
-    CPanel:AddControl ("CheckBox", { Label = "Start On (When Using a Key)", Command = "npc_scene_start" })
     CPanel:AddControl ("CheckBox", { Label = "Show Actors' Names Over Their Heads", Command = "npc_scene_render" })
     CPanel:Help       ("")
     CPanel:AddControl ("Button" , { Text  = "List Scenes", Command = "npc_scene_list" })
