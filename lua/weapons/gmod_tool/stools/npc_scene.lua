@@ -112,6 +112,63 @@ local function IsValidEnt(tr)
     return false
 end
 
+-- Render the NPC names.
+local function RenderActorName()
+    if SERVER then return end
+
+    if GetConVar("npc_scene_render"):GetInt() == 1 then
+        for _,ent in pairs(modifiedEntsTable) do
+            if ent:IsValid() then
+                local entPos = ent:GetPos()
+                local screenPos = Vector(0, 0, 0)
+                local entHeadBone = ent:LookupBone("ValveBiped.Bip01_Head1")
+
+                if entHeadBone then
+                    local entHeadPos, entHeadAng = ent:GetBonePosition(entHeadBone)
+
+                    screenPos = (entHeadPos + Vector(0, 0, 10)):ToScreen()
+                else
+                    local minBound, maxBound = ent:WorldSpaceAABB()
+                    local drawPos = Vector(entPos.x, entPos.y, minBound.z)
+
+                    screenPos = drawPos:ToScreen()
+                end
+
+                if ent.npcscene.name != "" and LocalPlayer():GetPos():Distance(ent:GetPos()) < 300 then
+                    draw.DrawText(ent.npcscene.name, "TargetID", screenPos.x - string.len(ent.npcscene.name) * 4, screenPos.y - 15, Color(255, 255, 255, 255))
+                end
+            end
+        end
+    end
+end
+
+if CLIENT then
+    hook.Add("HUDPaint", "RenderActorName", RenderActorName)
+end
+
+-- Send the modifiedEntsTable to new players
+local function InitModifiedEntsTable(ply)
+    if table.Count(modifiedEntsTable) > 0 then
+        local currentTableFormated = {}
+
+        for _,modifiedEnt in pairs(modifiedEntsTable) do
+            table.insert(currentTableFormated, { ent = modifiedEnt, npcscene = modifiedEnt.npcscene })
+        end
+
+        net.Start("npc_scene_set_ent_table")
+        net.WriteTable(currentTableFormated)
+        net.Send(ply)
+    end
+end
+
+if SERVER then
+    hook.Add("PlayerInitialSpawn", "InitModifiedEntsTable", function (ply)
+        hook.Add("SetupMove", "SetupMove" .. tostring(ply), function(ply)
+            InitModifiedEntsTable(ply)
+        end)
+    end)
+end
+
 -- --------------
 -- NET FUNCTIONS
 -- --------------
@@ -163,60 +220,6 @@ if CLIENT then
                 net.SendToServer()
             end
         end)
-    end)
-end
-
--- --------------
--- HOOKS
--- --------------
-
--- Sets the entity and scene tables on new players.
-if SERVER then
-    hook.Add("PlayerInitialSpawn", "set npc_scene ent table", function (ply)
-        timer.Simple(3, function()
-            -- Entity table
-            if table.Count(modifiedEntsTable) > 0 then
-                local currentTableFormated = {}
-
-                for _,modifiedEnt in pairs(modifiedEntsTable) do
-                    table.insert(currentTableFormated, { ent = modifiedEnt, npcscene = modifiedEnt.npcscene })
-                end
-
-                net.Start("npc_scene_set_ent_table")
-                net.WriteTable(currentTableFormated)
-                net.Send(ply)
-            end
-        end)
-    end)
-end
-
--- Renders the NPC names.
-if CLIENT then
-    hook.Add("HUDPaint", "ShowNPCHealthAboveHeadNPCScene", function()
-        if GetConVar("npc_scene_render"):GetInt() == 1 then
-            for _,ent in pairs(modifiedEntsTable) do
-                if ent:IsValid() then
-                    local entPos = ent:GetPos()
-                    local screenPos = Vector(0, 0, 0)
-                    local entHeadBone = ent:LookupBone("ValveBiped.Bip01_Head1")
-
-                    if entHeadBone then
-                        local entHeadPos, entHeadAng = ent:GetBonePosition(entHeadBone)
-
-                        screenPos = (entHeadPos + Vector(0, 0, 10)):ToScreen()
-                    else
-                        local minBound, maxBound = ent:WorldSpaceAABB()
-                        local drawPos = Vector(entPos.x, entPos.y, minBound.z)
-
-                        screenPos = drawPos:ToScreen()
-                    end
-
-                    if ent.npcscene.name != "" and LocalPlayer():GetPos():Distance(ent:GetPos()) < 300 then
-                        draw.DrawText(ent.npcscene.name, "TargetID", screenPos.x - string.len(ent.npcscene.name) * 4, screenPos.y - 15, Color(255, 255, 255, 255))
-                    end
-                end
-            end
-        end
     end)
 end
 
