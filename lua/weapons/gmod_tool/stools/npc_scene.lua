@@ -57,11 +57,11 @@ local npcscene_ent_table = {}
 -- --------------
 
 -- Stops the scene loops.
-local function StopTimer(Index_loop)
+local function StopTimer(timerName)
     if CLIENT then return end
 
-    if Index_loop then
-        timer.Stop(Index_loop)
+    if timerName then
+        timer.Stop(timerName)
     end
 end
 
@@ -78,14 +78,14 @@ local function StartScene(ent)
 
     -- Waits for the next play (if we are using loops).
     if ent.npcscene.Loop != 0 then
-        timer.Create(Index_loop, lenght, ent.npcscene.Loop, function()
+        timer.Create(tostring(ent) .. Index_loop, lenght, ent.npcscene.Loop, function()
             if not ent:IsValid() then
                 npcscene_ent_table[Index_key] = nil
-                StopTimer(Index_loop)
+                StopTimer(tostring(ent) .. Index_loop)
             elseif ent.npcscene.Loop == 0 then
                 npcscene_ent_table[Index_key] = nil
                 ent.npcscene.Active = 0
-                StopTimer(Index_loop)
+                StopTimer(tostring(ent) .. Index_loop)
             else
                 ent:PlayScene(ent.npcscene.Scene)
                 ent.npcscene.Loop = ent.npcscene.Loop - 1
@@ -190,7 +190,7 @@ end
 -- Sets the entity and scene tables on new players.
 if SERVER then
     hook.Add("PlayerInitialSpawn", "set npc_scene ent table", function (ply)
-        timer.Create("FSpawnFixNPCScene", 3, 1, function()
+        timer.Simple(3, function()
             -- Entity table
             if table.Count(npcscene_ent_table) > 0 then
                 local t = {}
@@ -361,7 +361,7 @@ function TOOL:LeftClick(tr)
         Start      = self:GetClientNumber("start"),
     }
 
-    timer.Create("AvoidSpawnErrorsNPCSceneLeft", 0.25, 1, function() -- Timer to avoid spawning errors.
+    timer.Simpe(0.25, function() -- Timer to avoid spawning errors.
         ent.npcscene = data
         
         -- Registers the entity in our internal table.
@@ -394,7 +394,7 @@ function TOOL:RightClick(tr)
     local ent = tr.Entity
     local name = self:GetClientInfo("actor")
 
-    timer.Create("AvoidSpawnErrorsNPCSceneRight", 0.25, 1, function() -- Timer to avoid spawning errors.
+    timer.Simple(0.25, function() -- Timer to avoid spawning errors.
         -- Sets the name.
         ent:SetName(name)
 
@@ -427,7 +427,7 @@ function TOOL:Reload(tr)
     -- Deletes the loops and reloads the NPCs.
     if ent.npcscene then 
         if SERVER then
-            timer.Create("AvoidSpawnErrorsNPCSceneReload", 0.25, 1, function() -- Timer to avoid spawning errors.
+            timer.Simple(0.25, function() -- Timer to avoid spawning errors.
                 if ent.npcscene.name then
                     ent:SetName("")
                 end
