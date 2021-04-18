@@ -1,7 +1,3 @@
--- --------------
--- TOOL SETUP
--- --------------
-
 TOOL.Category = "Poser"
 TOOL.Name = "#Tool.npc_scene.name"
 TOOL.Command = nil
@@ -32,18 +28,23 @@ if SERVER then
     util.AddNetworkString("npc_scene_play")
 end
 
--- --------------
--- GLOBAL VARS
--- --------------
-
--- Table for controlling keys, NPC reloading and name printing.
 local modifiedEntsTable = {}
+--[[
+    modifiedEntsTable[index] = ent -- ent index = ent object
 
--- --------------
--- GENERAL
--- --------------
+    In ent we have the npcscene field, like this:
+ 
+    ent.npcscene = {
+        active = int        -- 1/0 if the scene is/isn't running
+        index  = int,       -- ent index
+        loop   = int,       -- how many times the scene is going to repeat
+        scene  = string,    -- scene path
+        name   = string,    -- actor name
+        key    = string,    -- keyboard key association
+    }
+]]
 
--- Check if a entity is valid (NPC).
+-- Check if an NPC is valid
 local function IsValidEnt(tr)
     if tr.Hit and tr.Entity and tr.Entity:IsValid() and tr.Entity:IsNPC() then
         return true
@@ -52,26 +53,30 @@ local function IsValidEnt(tr)
     return false
 end
 
--- Plays a scene with or without loops.
+-- Play a scene
 local function StartScene(ent)
     if CLIENT then return end
 
     ent.npcscene.active = 1
 
-    -- Gets the animationg lenght and plays it.
+    -- Play the scene and get its lenght
     local lenght = ent:PlayScene(ent.npcscene.scene) 
-    local index = ent.npcscene.index
 
-    -- Waits for the next play (if we are using loops).
+    -- Set the next loops
     if ent.npcscene.loop != 0 then
+        local index = ent.npcscene.index
+
         timer.Create(tostring(ent) .. index, lenght, ent.npcscene.loop, function()
+            -- Invalid ent, stop the loop
             if not ent:IsValid() then
                 modifiedEntsTable[index] = nil
                 timer.Stop(tostring(ent) .. index)
+            -- Last loop
             elseif ent.npcscene.loop == 0 then
                 modifiedEntsTable[index] = nil
                 ent.npcscene.active = 0
                 timer.Stop(tostring(ent) .. index)
+            -- An execution in the sequence, there are more to do
             else
                 ent:PlayScene(ent.npcscene.scene)
                 ent.npcscene.loop = ent.npcscene.loop - 1
@@ -80,10 +85,11 @@ local function StartScene(ent)
     end
 end
 
--- Reloads NPCs so we can apply new scenes.
+-- Remove our modifications from the npc
 local function ReloadEntity(ply, ent)
     if CLIENT then return end
 
+    -- Use the duplicator to reset the states and create an effect
     local dup = {}
 
     dup = duplicator.Copy(ent)
@@ -100,7 +106,7 @@ local function ReloadEntity(ply, ent)
     return ent
 end
 
--- Render the NPC names.
+-- Render NPC names over their heads
 local function RenderActorName()
     if SERVER then return end
 
@@ -162,7 +168,7 @@ end
 -- --------------
 
 if SERVER then
-    -- Plays scenes with keys associated.
+    -- Play a scene by key 
     net.Receive("npc_scene_play", function()
         local ent = net.ReadEntity()
         local multiple = net.ReadInt(2)
@@ -174,7 +180,7 @@ if SERVER then
 end
 
 if CLIENT then
-    -- Sets the ent table.
+    -- Receive a table with modified entities to add to modifiedEntsTable
     net.Receive("npc_scene_set_ent_table", function()
         local entsTable = net.ReadTable()
         
@@ -186,7 +192,7 @@ if CLIENT then
         end
     end)
 
-    -- Sets the keys ("Tick" hook).
+    -- Set a key association
     net.Receive("npc_scene_hook_key", function(_, ply)
         local ent = net.ReadEntity()
         local index = ent.npcscene.index
@@ -215,11 +221,10 @@ end
 -- FILES
 -- --------------
 
--- Client Derma.
 local sceneListPanel
 local ctrl
 
--- Populates the scenes list in Singleplayer.
+-- Scan for .vcds and folders in a folder
 local function ScanDir(parentNode, parentDir, ext)
     if SERVER then return end
 
@@ -247,6 +252,7 @@ local function ScanDir(parentNode, parentDir, ext)
     end 
 end
 
+-- Initialize the scenes list
 local initialized
 local function ListScenes()
     if SERVER then return end
@@ -267,6 +273,7 @@ if CLIENT then
     concommand.Add("npc_scene_list", ListScenes)
 end
 
+-- Set the scenes list panel
 if CLIENT then
     sceneListPanel = vgui.Create("DFrame")
         sceneListPanel:SetTitle("Scenes")
@@ -286,7 +293,7 @@ end
 -- TOOLGUN
 -- --------------
 
--- Plays scenes.
+-- Play a scene
 function TOOL:LeftClick(tr)
     if not IsValidEnt(tr) then
         return false
@@ -298,33 +305,10 @@ function TOOL:LeftClick(tr)
     local ent = tr.Entity
     local scene = string.gsub(self:GetClientInfo("scene"), ".vcd", "")
     local name = ""
-    local times = self:GetClientNumber("multiple")
+    local multiple = self:GetClientNumber("multiple")
 
-    -- Checks if a scene is already applied.
-    if ent.npcscene then
-        -- Are we applying the same scene with the "Multiple Times" option enabled?
-        if times == 1 and ent.npcscene.scene == scene then
-            -- If yes, we just need to play it again and thats it Haha
-            StartScene(ent)
-
-            return true
-        end
-        -- Gets the actor name if there is one.
-        if ent.npcscene.name then
-            name = ent.npcscene.name
-        end
-    end
-
-    -- Reloads the scenes (by deleting the loops and reloading the NPCs).
-    if ent.npcscene then 
-        if ent.npcscene.active == 1 and times == 0 then
-            timer.Stop(tostring(ent) .. ent.npcscene.index)
-            ent = ReloadEntity(ply, ent)
-        end
-    end
-
-    -- Adds the configurations to the entity.
-    local data = {
+    -- Get the scene configuration
+    local sceneData = {
         active = 0,
         index  = ent:EntIndex(),
         loop   = self:GetClientNumber("loop"),
@@ -333,21 +317,43 @@ function TOOL:LeftClick(tr)
         key    = self:GetClientNumber("key"),
     }
 
+    -- Checks if there's a scene applied
+    if ent.npcscene then
+        -- Apply the scene on top scene if it's configured to do so
+        if multiple == 1 and ent.npcscene.scene == scene then
+            StartScene(ent)
+
+            return true
+        end
+
+        -- Get the actor name if there's one
+        if ent.npcscene.name then
+            name = ent.npcscene.name
+        end
+
+        -- Reload the scenes by deleting the loops and reloading the NPCs
+        if ent.npcscene.active == 1 and multiple == 0 then
+            timer.Stop(tostring(ent) .. ent.npcscene.index)
+            ent = ReloadEntity(ply, ent)
+        end
+    end
+
     timer.Simple(0.25, function() -- Timer to avoid spawning errors.
-        ent.npcscene = data
+        ent.npcscene = sceneData
 
         if not ent.npcscene then return end
 
-        -- Registers the entity in our internal table.
+        -- Store the modified entity in modifiedEntsTable
         table.insert(modifiedEntsTable, ent:EntIndex(), ent)
         net.Start("npc_scene_set_ent_table")
         net.WriteTable({ { ent = ent, npcscene = ent.npcscene } })
         net.Send(ply)
 
-        -- Plays/Prepares the scene.
-        if ent.npcscene.key == 0 then -- Not using keys? Let's play it.
+        -- Play the scene
+        if ent.npcscene.key == 0 then
             StartScene(ent)
-        else -- Using keys? Let's bind it.
+        -- Prepare the scene to be played by key
+        else
             net.Start("npc_scene_hook_key")
             net.WriteEntity(ent)
             net.Send(ply)
@@ -357,7 +363,7 @@ function TOOL:LeftClick(tr)
     return true
 end
 
--- Sets actor names.
+-- Set an actor name
 function TOOL:RightClick(tr)
     if not IsValidEnt(tr) then
         return false
@@ -366,20 +372,20 @@ function TOOL:RightClick(tr)
     end 
 
     local ent = tr.Entity
-    local name = self:GetClientInfo("actor")
+    local actorName = self:GetClientInfo("actor")
 
     timer.Simple(0.25, function() -- Timer to avoid spawning errors.
-        -- Sets the name.
-        ent:SetName(name)
+        -- Set the name
+        ent:SetName(actorName)
 
-        -- Adds the name to the entity.
+        -- Add the name to the entity
         if not ent.npcscene then
             ent.npcscene = {}
             ent.npcscene.index  = ent:EntIndex()
         end
-        ent.npcscene.name = name
+        ent.npcscene.name = actorName
 
-        -- Register the entity in our internal table.
+        -- Store the modified entity in modifiedEntsTable
         table.insert(modifiedEntsTable, ent:EntIndex(), ent)
         for _, v in ipairs(player.GetAll()) do
             net.Start("npc_scene_set_ent_table")
@@ -391,6 +397,7 @@ function TOOL:RightClick(tr)
     return true
 end
 
+-- Clear modifications
 function TOOL:Reload(tr)
     if not IsValidEnt(tr) then
         return false
@@ -398,7 +405,7 @@ function TOOL:Reload(tr)
 
     local ent = tr.Entity
 
-    -- Deletes the loops and reloads the NPCs.
+    -- Stop any loops and reload the NPC
     if ent.npcscene then 
         if SERVER then
             timer.Simple(0.25, function() -- Timer to avoid spawning errors.
