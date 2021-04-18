@@ -41,7 +41,7 @@ end
 
 if SERVER then
     util.AddNetworkString("npc_scene_set_ent_table")
-    util.AddNetworkString("npc_scene_key_hook")
+    util.AddNetworkString("npc_scene_hook_key")
     util.AddNetworkString("npc_scene_play")
 end
 
@@ -50,7 +50,7 @@ end
 -- --------------
 
 -- Table for controlling keys, NPC reloading and name printing.
-local npcscene_ent_table = {}
+local modifiedEntsTable = {}
 
 -- --------------
 -- GENERAL
@@ -60,26 +60,25 @@ local npcscene_ent_table = {}
 local function StartScene(ent)
     if CLIENT then return end
 
-    ent.npcscene.Active = 1
+    ent.npcscene.active = 1
 
     -- Gets the animationg lenght and plays it.
-    local lenght = ent:PlayScene(ent.npcscene.Scene) 
-    local Index_loop = ent.npcscene.Index_loop
-    local Index_key = ent.npcscene.Index_key
+    local lenght = ent:PlayScene(ent.npcscene.scene) 
+    local index = ent.npcscene.index
 
     -- Waits for the next play (if we are using loops).
-    if ent.npcscene.Loop != 0 then
-        timer.Create(tostring(ent) .. Index_loop, lenght, ent.npcscene.Loop, function()
+    if ent.npcscene.loop != 0 then
+        timer.Create(tostring(ent) .. index, lenght, ent.npcscene.loop, function()
             if not ent:IsValid() then
-                npcscene_ent_table[Index_key] = nil
-                timer.Stop(tostring(ent) .. Index_loop)
-            elseif ent.npcscene.Loop == 0 then
-                npcscene_ent_table[Index_key] = nil
-                ent.npcscene.Active = 0
-                timer.Stop(tostring(ent) .. Index_loop)
+                modifiedEntsTable[index] = nil
+                timer.Stop(tostring(ent) .. index)
+            elseif ent.npcscene.loop == 0 then
+                modifiedEntsTable[index] = nil
+                ent.npcscene.active = 0
+                timer.Stop(tostring(ent) .. index)
             else
-                ent:PlayScene(ent.npcscene.Scene)
-                ent.npcscene.Loop = ent.npcscene.Loop - 1
+                ent:PlayScene(ent.npcscene.scene)
+                ent.npcscene.loop = ent.npcscene.loop - 1
             end
         end)
     end
@@ -124,7 +123,7 @@ if SERVER then
         local ent = net.ReadEntity()
         local multiple = net.ReadInt(2)
 
-        if ent.npcscene.Active == 0 or multiple == 1 then
+        if ent.npcscene.active == 0 or multiple == 1 then
             StartScene(ent)
         end
     end)
@@ -133,38 +132,38 @@ end
 if CLIENT then
     -- Sets the ent table.
     net.Receive("npc_scene_set_ent_table", function()
-        local ent_table = net.ReadTable()
+        local entsTable = net.ReadTable()
         
-        for _,v in ipairs(ent_table) do
-            v.ent.npcscene = v.npcscene
+        for _,modifiedEnt in ipairs(entsTable) do
+            modifiedEnt.ent.npcscene = modifiedEnt.npcscene
         
-            table.insert(npcscene_ent_table, v.ent.npcscene.Index_key, v.ent)
+            table.insert(modifiedEntsTable, modifiedEnt.ent.npcscene.index, modifiedEnt.ent)
         end
     end)
 
     -- Sets the keys ("Tick" hook).
-    net.Receive("npc_scene_key_hook", function(_, ply)
+    net.Receive("npc_scene_hook_key", function(_, ply)
         local ent = net.ReadEntity()
-        local Index_key = ent.npcscene.Index_key
+        local index = ent.npcscene.index
 
-        if hook.GetTable()[Index_key] then
+        if hook.GetTable()[index] then
             return
         end
 
         local multiple = GetConVar("npc_scene_multiple"):GetInt()
         
-        if ent.npcscene.Start == 1 then
+        if ent.npcscene.start == 1 then
             net.Start("npc_scene_play")
             net.WriteEntity(ent)
             net.WriteInt(multiple, 2)
             net.SendToServer()
         end
 
-        hook.Add("Tick", "hook_" .. Index_key, function()
+        hook.Add("Tick", "hook_" .. index, function()
             if not ent:IsValid() then
-                npcscene_ent_table[Index_key] = nil
-                hook.Remove("Tick", "hook_" .. Index_key)
-            elseif input.IsKeyDown(ent.npcscene.Key) then
+                modifiedEntsTable[index] = nil
+                hook.Remove("Tick", "hook_" .. index)
+            elseif input.IsKeyDown(ent.npcscene.key) then
                 net.Start("npc_scene_play")
                 net.WriteEntity(ent)
                 net.WriteInt(multiple, 2)
@@ -183,15 +182,15 @@ if SERVER then
     hook.Add("PlayerInitialSpawn", "set npc_scene ent table", function (ply)
         timer.Simple(3, function()
             -- Entity table
-            if table.Count(npcscene_ent_table) > 0 then
-                local t = {}
+            if table.Count(modifiedEntsTable) > 0 then
+                local currentTableFormated = {}
 
-                for _,v in pairs(npcscene_ent_table) do
-                    table.insert(t, { ent = v, npcscene = v.npcscene })
+                for _,modifiedEnt in pairs(modifiedEntsTable) do
+                    table.insert(currentTableFormated, { ent = modifiedEnt, npcscene = modifiedEnt.npcscene })
                 end
 
                 net.Start("npc_scene_set_ent_table")
-                net.WriteTable(t)
+                net.WriteTable(currentTableFormated)
                 net.Send(ply)
             end
         end)
@@ -202,25 +201,25 @@ end
 if CLIENT then
     hook.Add("HUDPaint", "ShowNPCHealthAboveHeadNPCScene", function()
         if GetConVar("npc_scene_render"):GetInt() == 1 then
-            for _,ent in pairs(npcscene_ent_table) do
+            for _,ent in pairs(modifiedEntsTable) do
                 if ent:IsValid() then
-                    local pos = ent:GetPos()
-                    local drawposscreen = Vector(0, 0, 0)
-                    local head = ent:LookupBone("ValveBiped.Bip01_Head1")
+                    local entPos = ent:GetPos()
+                    local screenPos = Vector(0, 0, 0)
+                    local entHeadBone = ent:LookupBone("ValveBiped.Bip01_Head1")
 
-                    if head then
-                        local headpos, headang = ent:GetBonePosition(head)
+                    if entHeadBone then
+                        local entHeadPos, entHeadAng = ent:GetBonePosition(entHeadBone)
 
-                        drawposscreen = (headpos + Vector(0, 0, 10)):ToScreen()
+                        screenPos = (entHeadPos + Vector(0, 0, 10)):ToScreen()
                     else
-                        local min, max = ent:WorldSpaceAABB()
-                        local drawpos = Vector(pos.x, pos.y, max.z)
+                        local minBound, maxBound = ent:WorldSpaceAABB()
+                        local drawPos = Vector(entPos.x, entPos.y, minBound.z)
 
-                        drawposscreen = drawpos:ToScreen()
+                        screenPos = drawPos:ToScreen()
                     end
 
                     if ent.npcscene.name != "" and LocalPlayer():GetPos():Distance(ent:GetPos()) < 300 then
-                        draw.DrawText(ent.npcscene.name, "TargetID", drawposscreen.x - string.len(ent.npcscene.name) * 4, drawposscreen.y - 15, Color(255, 255, 255, 255))
+                        draw.DrawText(ent.npcscene.name, "TargetID", screenPos.x - string.len(ent.npcscene.name) * 4, screenPos.y - 15, Color(255, 255, 255, 255))
                     end
                 end
             end
@@ -233,46 +232,46 @@ end
 -- --------------
 
 -- Client Derma.
-local SceneListPanel
+local sceneListPanel
 local ctrl
 
 -- Populates the scenes list in Singleplayer.
-local function ScanDir(t, dir, ext)
+local function ScanDir(parentNode, parentDir, ext)
     if SERVER then return end
 
-    local files, dirs = file.Find(dir.."*", "GAME")
+    local files, dirs = file.Find(parentDir .. "*", "GAME")
 
-    for _, fdir in ipairs(dirs) do
-        local n = t:AddNode(fdir)
+    for _,dirName in ipairs(dirs) do
+        local node = parentNode:AddNode(dirName)
         local clicked = false
 
-        n.DoClick = function()
+        node.DoClick = function()
             if clicked then return end
 
             clicked = true
-            ScanDir(n, dir..fdir.."/", ext)
-            n:SetExpanded(true)
+            ScanDir(node, parentDir .. dirName .. "/", ext)
+            node:SetExpanded(true)
         end
     end
 
-    for k,v in ipairs(files) do
-        local n = t:AddNode(v)
-        local arq = dir..v
+    for _,fileName in ipairs(files) do
+        local node = parentNode:AddNode(fileName)
+        local path = parentDir .. fileName
 
-        n:SetIcon("icon16/page_white.png")
-        n.DoClick = function() RunConsoleCommand("npc_scene_scene", arq) end
+        node:SetIcon("icon16/page_white.png")
+        node.DoClick = function() RunConsoleCommand("npc_scene_scene", path) end
     end 
 end
 
 if CLIENT then
-    SceneListPanel = vgui.Create("DFrame")
-        SceneListPanel:SetTitle("Scenes")
-        SceneListPanel:SetSize(300, 700)
-        SceneListPanel:SetPos(10, 10)
-        SceneListPanel:SetDeleteOnClose(false)
-        SceneListPanel:SetVisible(false)
+    sceneListPanel = vgui.Create("DFrame")
+        sceneListPanel:SetTitle("Scenes")
+        sceneListPanel:SetSize(300, 700)
+        sceneListPanel:SetPos(10, 10)
+        sceneListPanel:SetDeleteOnClose(false)
+        sceneListPanel:SetVisible(false)
 
-    ctrl = vgui.Create("DTree", SceneListPanel)
+    ctrl = vgui.Create("DTree", sceneListPanel)
         ctrl:SetPadding(5)
         ctrl:SetSize(300, 675)
         ctrl:SetPos(0, 25)
@@ -291,8 +290,8 @@ local function ListScenes()
         initialized = true
     end
 
-    SceneListPanel:SetVisible(true)
-    SceneListPanel:MakePopup()
+    sceneListPanel:SetVisible(true)
+    sceneListPanel:MakePopup()
 end
 
 if CLIENT then
@@ -315,12 +314,12 @@ function TOOL:LeftClick(tr)
     local ent = tr.Entity
     local scene = string.gsub(self:GetClientInfo("scene"), ".vcd", "")
     local name = ""
-    local apply_multiple_times = self:GetClientNumber("multiple")
+    local times = self:GetClientNumber("multiple")
 
     -- Checks if a scene is already applied.
     if ent.npcscene then
         -- Are we applying the same scene with the "Multiple Times" option enabled?
-        if apply_multiple_times == 1 and ent.npcscene.Scene == scene then
+        if times == 1 and ent.npcscene.scene == scene then
             -- If yes, we just need to play it again and thats it Haha
             StartScene(ent)
 
@@ -331,41 +330,40 @@ function TOOL:LeftClick(tr)
             name = ent.npcscene.name
         end
     end
-    
+
     -- Reloads the scenes (by deleting the loops and reloading the NPCs).
     if ent.npcscene then 
-        if ent.npcscene.Active == 1 and apply_multiple_times == 0 then
-            timer.Stop(tostring(ent) .. ent.npcscene.Index_loop)
+        if ent.npcscene.active == 1 and times == 0 then
+            timer.Stop(tostring(ent) .. ent.npcscene.index)
             ent = ReloadEntity(ply, ent)
         end
     end
 
     -- Adds the configurations to the entity.
     local data = {
-        Active     = 0,
-        Index_loop = "loop_" .. ent:EntIndex(),
-        Index_key  = ent:EntIndex(),
-        Loop       = self:GetClientNumber("loop"),
-        Scene      = scene,
-        name       = name,
-        Key        = self:GetClientNumber("key"),
-        Start      = self:GetClientNumber("start"),
+        active = 0,
+        index  = ent:EntIndex(),
+        loop   = self:GetClientNumber("loop"),
+        scene  = scene,
+        name   = name,
+        key    = self:GetClientNumber("key"),
+        start  = self:GetClientNumber("start"),
     }
 
     timer.Simpe(0.25, function() -- Timer to avoid spawning errors.
         ent.npcscene = data
         
         -- Registers the entity in our internal table.
-        table.insert(npcscene_ent_table, ent:EntIndex(), ent)
+        table.insert(modifiedEntsTable, ent:EntIndex(), ent)
         net.Start("npc_scene_set_ent_table")
         net.WriteTable({ { ent = ent, npcscene = ent.npcscene } })
         net.Send(ply)
 
         -- Plays/Prepares the scene.
-        if ent.npcscene.Key == 0 then -- Not using keys? Let's play it.
+        if ent.npcscene.key == 0 then -- Not using keys? Let's play it.
             StartScene(ent)
         else -- Using keys? Let's bind it.
-            net.Start("npc_scene_key_hook")
+            net.Start("npc_scene_hook_key")
             net.WriteEntity(ent)
             net.Send(ply)
         end
@@ -392,12 +390,12 @@ function TOOL:RightClick(tr)
         -- Adds the name to the entity.
         if not ent.npcscene then
             ent.npcscene = {}
-            ent.npcscene.Index_key  = ent:EntIndex()
+            ent.npcscene.index  = ent:EntIndex()
         end
         ent.npcscene.name = name
 
         -- Register the entity in our internal table.
-        table.insert(npcscene_ent_table, ent:EntIndex(), ent)
+        table.insert(modifiedEntsTable, ent:EntIndex(), ent)
         for _, v in ipairs(player.GetAll()) do
             net.Start("npc_scene_set_ent_table")
             net.WriteTable({ { ent = ent, npcscene = ent.npcscene } })
@@ -423,7 +421,7 @@ function TOOL:Reload(tr)
                     ent:SetName("")
                 end
 
-                timer.Stop(tostring(ent) .. ent.npcscene.Index_loop)
+                timer.Stop(tostring(ent) .. ent.npcscene.index)
                 ReloadEntity(self:GetOwner(), ent)
             end)
         end
