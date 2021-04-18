@@ -220,17 +220,20 @@ local function ListScenes()
     if SERVER then return end
 
     if not initialized then
+        local width, height = 300, 700
+        local padding = 25
+
         sceneListPanel = vgui.Create("DFrame")
             sceneListPanel:SetTitle("Scenes")
-            sceneListPanel:SetSize(300, 700)
-            sceneListPanel:SetPos(10, 10)
+            sceneListPanel:SetSize(width, height)
+            sceneListPanel:SetPos(ScrW() - width - padding, padding)
             sceneListPanel:SetDeleteOnClose(false)
             sceneListPanel:SetVisible(false)
 
 
         local ctrl = vgui.Create("DTree", sceneListPanel)
             ctrl:SetPadding(5)
-            ctrl:SetSize(300, 675)
+            ctrl:SetSize(width, height - 25)
             ctrl:SetPos(0, 25)
             ctrl:SetBackgroundColor(Color(255, 255, 255, 255))
 
