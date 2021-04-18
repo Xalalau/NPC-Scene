@@ -379,10 +379,10 @@ function TOOL:RightClick(tr)
     -- Store the modified entity in modifiedEntsTable
     table.insert(modifiedEntsTable, ent:EntIndex(), ent)
 
-    for _, v in ipairs(player.GetAll()) do
+    for _,aPly in ipairs(player.GetHumans()) do
         net.Start("npc_scene_set_ent_table")
             net.WriteTable({ { ent = ent, npcscene = ent.npcscene } })
-        net.Send(v)
+        net.Send(aPly)
     end
 
     return true
