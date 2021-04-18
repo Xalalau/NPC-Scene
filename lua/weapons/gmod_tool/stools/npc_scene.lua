@@ -350,7 +350,7 @@ function TOOL:LeftClick(tr)
         start  = self:GetClientNumber("start"),
     }
 
-    timer.Simpe(0.25, function() -- Timer to avoid spawning errors.
+    timer.Simple(0.25, function() -- Timer to avoid spawning errors.
         ent.npcscene = data
         
         -- Registers the entity in our internal table.
