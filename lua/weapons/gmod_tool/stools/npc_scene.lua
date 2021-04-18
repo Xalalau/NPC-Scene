@@ -27,8 +27,22 @@ if SERVER then
     util.AddNetworkString("npc_scene_play")
 end
 
+local NPCS = {}
+
+if CLIENT then
+    net.Receive("npc_scene_hook_key", function()
+        NPCS:SetKey(net.ReadInt(16))
+    end)
+end
+
+if SERVER then
+    net.Receive("npc_scene_play", function(_, ply)
+        NPCS:PlayScene(ply, net.ReadInt(16))
+    end)
+end
+
 -- Share the scene values between server and client
-local function SetNWVars(npc, sceneData)
+function NPCS:SetNWVars(npc, sceneData)
     if sceneData.active then npc:SetNWBool("npcscene_active", sceneData.active) end
     if sceneData.index then npc:SetNWInt("npcscene_index", sceneData.index) end
     if sceneData.loop then npc:SetNWInt("npcscene_loop", sceneData.loop) end
@@ -38,7 +52,7 @@ local function SetNWVars(npc, sceneData)
 end
 
 -- Set a key association
-local function SetKey(index)
+function NPCS:SetKey(index)
     if SERVER then return end
 
     local npc = ents.GetByIndex(index)
@@ -62,14 +76,8 @@ local function SetKey(index)
     end)
 end
 
-if CLIENT then
-    net.Receive("npc_scene_hook_key", function()
-        SetKey(net.ReadInt(16))
-    end)
-end
-
 -- Play a scene
-local function PlayScene(ply, index)
+function NPCS:PlayScene(ply, index)
     if CLIENT then return end
 
     local multiple = ply:GetInfo("npc_scene_multiple") == "1" and true or false
@@ -104,14 +112,8 @@ local function PlayScene(ply, index)
     end
 end
 
-if SERVER then
-    net.Receive("npc_scene_play", function(_, ply)
-        PlayScene(ply, net.ReadInt(16))
-    end)
-end
-
 -- Remove our modifications from the npc
-local function ReloadNPC(ply, npc)
+function NPCS:ReloadNPC(ply, npc)
     if CLIENT then return end
 
     -- Use the duplicator to reset the states and create an effect
@@ -132,7 +134,7 @@ local function ReloadNPC(ply, npc)
 end
 
 -- Render NPC names over their heads
-local function RenderActorName(npc)
+function NPCS:RenderActorName(npc)
     if SERVER then return end
 
     npc.RenderOverride = function(self)
@@ -210,7 +212,7 @@ local function ListScenes()
     if not initialized then
         local node = ctrl:AddNode("Scenes! (click one to select)")
 
-        ScanDir(node, "scenes/", ".vcd")
+        NPCS:ScanDir(node, "scenes/", ".vcd")
         node:SetExpanded(true)
         initialized = true
     end
@@ -267,7 +269,7 @@ function TOOL:LeftClick(tr)
     if npc:GetNWInt("npcscene_index") then
         -- Apply the scene on top scene if it's configured to do so
         if multiple and npc:GetNWString("npcscene_path") == path then
-            PlayScene(ply, npc:GetNWInt("npcscene_index"))
+            NPCS:PlayScene(ply, npc:GetNWInt("npcscene_index"))
 
             return true
         end
@@ -280,7 +282,7 @@ function TOOL:LeftClick(tr)
         -- Reload the scenes by deleting the loops and reloading the NPCs
         if npc:GetNWBool("npcscene_active") and not multiple then
             timer.Stop(tostring(npc) .. npc:GetNWInt("npcscene_index"))
-            npc = ReloadNPC(ply, npc)
+            npc = NPCS:ReloadNPC(ply, npc)
         end
     end
 
@@ -294,11 +296,11 @@ function TOOL:LeftClick(tr)
         key    = self:GetClientNumber("key"),
     }
 
-    SetNWVars(npc, sceneData)
+    NPCS:SetNWVars(npc, sceneData)
 
     -- Play the scene
     if sceneData.key == 0 then
-        PlayScene(ply, sceneData.index)
+        NPCS:PlayScene(ply, sceneData.index)
     -- Prepare the scene to be played by key
     else
         net.Start("npc_scene_hook_key")
@@ -316,7 +318,7 @@ function TOOL:RightClick(tr)
     local npc = tr.Entity
 
     -- Render the name on the client
-    RenderActorName(npc)
+    NPCS:RenderActorName(npc)
 
     if CLIENT then return true end
 
@@ -328,7 +330,7 @@ function TOOL:RightClick(tr)
 
     npc:SetName(sceneData.actor)
 
-    SetNWVars(npc, sceneData)
+    NPCS:SetNWVars(npc, sceneData)
 
     return true
 end
@@ -344,7 +346,7 @@ function TOOL:Reload(tr)
     if npc:GetNWInt("npcscene_index") then 
         if SERVER then
             timer.Stop(tostring(npc) .. npc:GetNWInt("npcscene_index"))
-            ReloadNPC(ply, npc)
+            NPCS:ReloadNPC(ply, npc)
         end
 
         return true
