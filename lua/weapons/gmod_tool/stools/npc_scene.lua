@@ -1,3 +1,6 @@
+-- --------------
+-- Base
+-- --------------
 
 TOOL.Category = "Poser"
 TOOL.Name = "#Tool.npc_scene.name"
@@ -23,24 +26,30 @@ if CLIENT then
     language.Add("Tool.npc_scene.reload", "Reload to stop the scene.")
 end
 
+local NPCS = {}
+
+-- --------------
+-- Net
+-- --------------
+
 if SERVER then
     util.AddNetworkString("npc_scene_hook_key")
     util.AddNetworkString("npc_scene_play")
+
+    net.Receive("npc_scene_play", function(_, ply)
+        NPCS:PlayScene(ply, net.ReadInt(16))
+    end)
 end
-
-local NPCS = {}
-
+    
 if CLIENT then
     net.Receive("npc_scene_hook_key", function()
         NPCS:SetKey(net.ReadInt(16))
     end)
 end
 
-if SERVER then
-    net.Receive("npc_scene_play", function(_, ply)
-        NPCS:PlayScene(ply, net.ReadInt(16))
-    end)
-end
+-- --------------
+-- General
+-- --------------
 
 -- Share the scene values between server and client
 function NPCS:SetNWVars(npc, sceneData)
@@ -235,7 +244,7 @@ if CLIENT then
 end
 
 -- --------------
--- TOOLGUN
+-- Toolgun
 -- --------------
 
 local function toolGunChecks(tr)
