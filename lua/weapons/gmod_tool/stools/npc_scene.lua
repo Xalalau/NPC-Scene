@@ -208,7 +208,7 @@ local function ScanDir(parentNode, parentDir, ext)
         local node = parentNode:AddNode(fileName)
         local path = parentDir .. fileName
 
-        node:SetIcon("icon16/page_white.png")
+        node:SetIcon("icon16/page.png")
         node.DoClick = function() RunConsoleCommand("npc_scene_scene", path) end
     end 
 end
