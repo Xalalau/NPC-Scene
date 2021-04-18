@@ -194,9 +194,11 @@ if CLIENT then
         end
 
         hook.Add("Tick", hookName, function()
+            -- NPC is gone
             if not ent:IsValid() then
                 modifiedEntsTable[index] = nil
                 hook.Remove("Tick", hookName)
+            -- Play scene
             elseif input.IsKeyDown(ent.npcscene.key) then
                 net.Start("npc_scene_play")
                     net.WriteEntity(ent)
