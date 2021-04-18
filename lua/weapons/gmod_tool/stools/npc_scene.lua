@@ -55,6 +55,15 @@ local modifiedEntsTable = {}
 -- GENERAL
 -- --------------
 
+-- Check if a entity is valid (NPC).
+local function IsValidEnt(tr)
+    if tr.Hit and tr.Entity and tr.Entity:IsValid() and tr.Entity:IsNPC() then
+        return true
+    end
+    
+    return false
+end
+
 -- Plays a scene with or without loops.
 local function StartScene(ent)
     if CLIENT then return end
@@ -101,15 +110,6 @@ local function ReloadEntity(ply, ent)
     undo.Finish()
 
     return ent
-end
-
--- Check if a entity is valid (NPC).
-local function IsValidEnt(tr)
-    if tr.Hit and tr.Entity and tr.Entity:IsValid() and tr.Entity:IsNPC() then
-        return true
-    end
-    
-    return false
 end
 
 -- Render the NPC names.
@@ -259,21 +259,6 @@ local function ScanDir(parentNode, parentDir, ext)
     end 
 end
 
-if CLIENT then
-    sceneListPanel = vgui.Create("DFrame")
-        sceneListPanel:SetTitle("Scenes")
-        sceneListPanel:SetSize(300, 700)
-        sceneListPanel:SetPos(10, 10)
-        sceneListPanel:SetDeleteOnClose(false)
-        sceneListPanel:SetVisible(false)
-
-    ctrl = vgui.Create("DTree", sceneListPanel)
-        ctrl:SetPadding(5)
-        ctrl:SetSize(300, 675)
-        ctrl:SetPos(0, 25)
-        ctrl:SetBackgroundColor(Color(255, 255, 255, 255))
-end
-
 local initialized
 local function ListScenes()
     if SERVER then return end
@@ -292,6 +277,21 @@ end
 
 if CLIENT then
     concommand.Add("npc_scene_list", ListScenes)
+end
+
+if CLIENT then
+    sceneListPanel = vgui.Create("DFrame")
+        sceneListPanel:SetTitle("Scenes")
+        sceneListPanel:SetSize(300, 700)
+        sceneListPanel:SetPos(10, 10)
+        sceneListPanel:SetDeleteOnClose(false)
+        sceneListPanel:SetVisible(false)
+
+    ctrl = vgui.Create("DTree", sceneListPanel)
+        ctrl:SetPadding(5)
+        ctrl:SetSize(300, 675)
+        ctrl:SetPos(0, 25)
+        ctrl:SetBackgroundColor(Color(255, 255, 255, 255))
 end
 
 -- --------------
