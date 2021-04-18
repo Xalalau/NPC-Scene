@@ -38,7 +38,7 @@ local function SetNWVars(npc, sceneData)
 end
 
 -- Play a scene
-local function StartScene(npc)
+local function PlayScene(npc)
     if CLIENT then return end
 
     npc:SetNWBool("npcscene_active", true)
@@ -131,7 +131,7 @@ if SERVER then
         local npc = ents.GetByIndex(index)
 
         if not npc:GetNWBool("npcscene_active") or multiple == 1 then
-            StartScene(npc)
+            PlayScene(npc)
         end
     end)
 end
@@ -262,7 +262,7 @@ function TOOL:LeftClick(tr)
     if npc:GetNWInt("npcscene_index") then
         -- Apply the scene on top scene if it's configured to do so
         if multiple and npc:GetNWString("npcscene_path") == path then
-            StartScene(npc)
+            PlayScene(npc)
 
             return true
         end
@@ -293,7 +293,7 @@ function TOOL:LeftClick(tr)
 
     -- Play the scene
     if sceneData.key == 0 then
-        StartScene(npc)
+        PlayScene(npc)
     -- Prepare the scene to be played by key
     else
         net.Start("npc_scene_hook_key")
