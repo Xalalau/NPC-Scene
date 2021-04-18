@@ -1,3 +1,4 @@
+
 TOOL.Category = "Poser"
 TOOL.Name = "#Tool.npc_scene.name"
 TOOL.Command = nil
@@ -169,18 +170,6 @@ function NPCS:RenderActorName(npc)
     end
 end
 
--- --------------
--- NET FUNCTIONS
--- --------------
-
-
--- --------------
--- FILES
--- --------------
-
-local sceneListPanel
-local ctrl
-
 -- Scan for .vcds and folders in a folder
 local function ScanDir(parentNode, parentDir, ext)
     if SERVER then return end
@@ -209,16 +198,31 @@ local function ScanDir(parentNode, parentDir, ext)
     end 
 end
 
--- Initialize the scenes list
+-- Open the scenes list
 local initialized
+local sceneListPanel
 local function ListScenes()
     if SERVER then return end
 
     if not initialized then
-        local node = ctrl:AddNode("Scenes! (click one to select)")
+        sceneListPanel = vgui.Create("DFrame")
+            sceneListPanel:SetTitle("Scenes")
+            sceneListPanel:SetSize(300, 700)
+            sceneListPanel:SetPos(10, 10)
+            sceneListPanel:SetDeleteOnClose(false)
+            sceneListPanel:SetVisible(false)
 
-        NPCS:ScanDir(node, "scenes/", ".vcd")
-        node:SetExpanded(true)
+
+        local ctrl = vgui.Create("DTree", sceneListPanel)
+            ctrl:SetPadding(5)
+            ctrl:SetSize(300, 675)
+            ctrl:SetPos(0, 25)
+            ctrl:SetBackgroundColor(Color(255, 255, 255, 255))
+
+        local node = ctrl:AddNode("Scenes! (click one to select)")
+            ScanDir(node, "scenes/", ".vcd")
+            node:SetExpanded(true)
+
         initialized = true
     end
 
@@ -228,22 +232,6 @@ end
 
 if CLIENT then
     concommand.Add("npc_scene_list", ListScenes)
-end
-
--- Set the scenes list panel
-if CLIENT then
-    sceneListPanel = vgui.Create("DFrame")
-        sceneListPanel:SetTitle("Scenes")
-        sceneListPanel:SetSize(300, 700)
-        sceneListPanel:SetPos(10, 10)
-        sceneListPanel:SetDeleteOnClose(false)
-        sceneListPanel:SetVisible(false)
-
-    ctrl = vgui.Create("DTree", sceneListPanel)
-        ctrl:SetPadding(5)
-        ctrl:SetSize(300, 675)
-        ctrl:SetPos(0, 25)
-        ctrl:SetBackgroundColor(Color(255, 255, 255, 255))
 end
 
 -- --------------
