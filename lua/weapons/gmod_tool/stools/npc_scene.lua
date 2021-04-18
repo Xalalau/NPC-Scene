@@ -33,9 +33,9 @@ TOOL.Information = {
 if CLIENT then
     language.Add("Tool.npc_scene.name", "NPC Scene")
     language.Add("Tool.npc_scene.desc", "Make NPCs act using \".vcd\" files!")
-    language.Add("Tool.npc_scene.left", "Left click to play the entered scene.")
+    language.Add("Tool.npc_scene.left", "Left click to play the scene.")
     language.Add("Tool.npc_scene.right", "Right click to set the actor name.")
-    language.Add("Tool.npc_scene.reload", "Reload to stop a scene.")
+    language.Add("Tool.npc_scene.reload", "Reload to stop the scene.")
 end
 
 if SERVER then
@@ -439,8 +439,8 @@ function TOOL.BuildCPanel(CPanel)
         CPanel:ControlHelp("\nApply a scene and open the console to see which actor names you need to set.")
     end
     CPanel:AddControl ("Slider"  , { Label = "Loop", Type = "int", Min = "0", Max = "100", Command = "npc_scene_loop"})
-    CPanel:AddControl ("CheckBox", { Label = "Apply Scenes Multiple Times", Command = "npc_scene_multiple" })
-    CPanel:AddControl ("CheckBox", { Label = "Show Actors' Names Over Their Heads", Command = "npc_scene_render" })
+    CPanel:AddControl ("CheckBox", { Label = "Allow to apply scene multiple times", Command = "npc_scene_multiple" })
+    CPanel:AddControl ("CheckBox", { Label = "Render actor names", Command = "npc_scene_render" })
     CPanel:Help       ("")
     CPanel:AddControl ("Button" , { Text  = "List Scenes", Command = "npc_scene_list" })
 end
