@@ -6,8 +6,6 @@
 -- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/shared/choreoactor.cpp#L267
 -- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/shared/sceneimage.cpp#L217
 
-if SERVER then return end
-
 local SIZEOF_INT = 4
 local SIZEOF_UINT = 4
 local SIZEOF_SHORT = 2
