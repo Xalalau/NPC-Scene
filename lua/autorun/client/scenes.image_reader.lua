@@ -1,4 +1,7 @@
+do return end
+
 -- W.I.P.
+-- (R.I.P.)
 
 --[[
 
@@ -12,13 +15,17 @@
 
     In short, you're only going to get correct results until methods:ReadSceneData(), when reading the bvcd offset has proven
     to be something very confusing. Perhaps this part is still totally broken... From there starts the binary restoration,
-    which I barely tested. It was more of an exercise to handle Source than something to use, Certainly the logic is broken.
+    which I barely tested. It was more of an exercise to handle Source than something to use, certainly the logic is broken.
     So I left several links pointing to the origin of each function to help with advances later.
 
-    For someone who wants to make a short list, this is kind of overkill.
+    For someone who wants to make a list, this is kind of overkill.
 
     - Xalalau Xubilozo
 
+
+    [Edit] Even with https://developer.valvesoftware.com/wiki/VSIF2VCD, that the author knows what he's doing, I wasn't able
+    to recover all the scene names. This is not worth it. I'll generate the lists using the SDK and make them hardcoded.
+        https://github.com/ValveSoftware/source-sdk-2013/tree/master/sp/game
 ]]
 
 -- References:
