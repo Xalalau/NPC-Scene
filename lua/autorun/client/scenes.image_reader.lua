@@ -6,6 +6,8 @@
 -- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/shared/choreoactor.cpp#L267
 -- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/shared/sceneimage.cpp#L217
 
+local function IDToString(f) return string.char(string.byte(f:Read(4),1,4)) end
+
 local function ReadNullTerminatedString(f,max)
     local t = ""
     while(true) do
@@ -124,14 +126,14 @@ function methods:ReadSceneData(sceneEntry)
 
     f:Seek(sceneEntry.dataOffset)
 
-    local id = f:ReadULong()
+    local id = IDToString(f)
 
-    if id == 1684239970 then -- "bvcd"
+    if id == "bvcd" then
         return {
             id = id,
             scene = f:Read(sceneEntry.dataLength)
         }
-    elseif id == 1095588428 then -- "LZMA"
+    elseif id == "LZMA" then
         local sceneData = {
             id = id,
             actualSize = f:ReadULong(),
@@ -151,7 +153,7 @@ local scenesEntries = scenes_data:ReadSceneEntries()
 
 for k,scenesEntry in ipairs(scenesEntries) do
     local sceneData = scenes_data:ReadSceneData(scenesEntry)
-    if sceneData.id == 1095588428 then -- "LZMA"
+    if sceneData.id == "LZMA" then
         -- How to uncompress sceneData.scene?
 
         -- util.Decompress(sceneData.scene) -- CRASH
