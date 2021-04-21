@@ -1,10 +1,12 @@
 -- W.I.P.
 
+-- References:
+-- https://developer.valvesoftware.com/wiki/Scenes.image
 -- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/public/scenefilecache/SceneImageFile.h
 -- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/shared/sceneimage.cpp
 -- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/shared/choreoscene.cpp#L3783
 -- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/shared/choreoactor.cpp#L267
--- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/shared/sceneimage.cpp#L217
+-- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/utils/lzma/C/Util/Lzma/LzmaUtil.c#L151
 
 local function IDToString(f) return string.char(string.byte(f:Read(4),1,4)) end
 
