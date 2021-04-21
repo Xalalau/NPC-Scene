@@ -118,8 +118,6 @@ function methods:ReadSceneSummary(sceneEntry)
     return sceneSummary
 end
 
-local function IDToString(f) return string.char(string.byte(f:Read(4),1,4)) end
-
 function methods:ReadSceneData(sceneEntry)
     local f = self.m_file
     if not f or not sceneEntry then return false end
