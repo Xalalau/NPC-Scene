@@ -38,8 +38,7 @@ local methods = {}
 meta.__index = methods
 methods.MetaName = "scenes.image"
 function meta:__tostring()
-    local str = "scenes.image [" .. tostring(self.fName) .. "] [" .. tostring(self.m_id) .. "] [" .. tostring(self.m_version) .. "]"
-    return str
+    return "scenes.image [" .. tostring(self.fName) .. "] [" .. tostring(self.m_id) .. "] [" .. tostring(self.m_version) .. "]"
 end
 
 function OpenScenesImage(fName)
