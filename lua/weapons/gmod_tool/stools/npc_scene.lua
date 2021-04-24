@@ -199,13 +199,13 @@ function NPCS:CreateNodes(parentNode, parentDir, sceneList)
     for k, item in pairs(sceneList) do
         if istable(item) then
             local tab = { [k] = item }
-            table.insert(folders, tab)
+            folders[k] = tab
         else
             table.insert(files, item)
         end
     end
 
-    for _, item in pairs(folders) do
+    for _, item in SortedPairs(folders) do
         for folderName, folder in pairs(item) do
             local node = parentNode:AddNode(folderName)
 
@@ -266,7 +266,7 @@ local sceneListPanel
 local function ListScenes()
     if SERVER then return end
 
-    if not initialized then
+    --if not initialized then
         local width, height = 300, 700
         local padding = 35
 
@@ -291,7 +291,7 @@ local function ListScenes()
             node:SetExpanded(true)
 
         initialized = true
-    end
+    --end
 
     sceneListPanel:SetVisible(true)
     sceneListPanel:MakePopup()
