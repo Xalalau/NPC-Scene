@@ -32,8 +32,6 @@ if CLIENT then
     language.Add("Tool.npc_scene.reload", "Reload to stop the scene.")
 end
 
-local NPCS = {}
-
 -- --------------
 -- Net
 -- --------------
@@ -193,31 +191,73 @@ function NPCS:RenderActorName(index)
 end
 
 -- Scan for .vcds and folders in a folder
-local function ScanDir(parentNode, parentDir, ext)
+function NPCS:CreateNodes(parentNode, parentDir, sceneList)
     if SERVER then return end
 
-    local files, dirs = file.Find(parentDir .. "*", "GAME")
+    local folders, files = {}, {}
 
-    for _,dirName in ipairs(dirs) do
-        local node = parentNode:AddNode(dirName)
-        local clicked = false
-
-        node.DoClick = function()
-            if clicked then return end
-
-            clicked = true
-            ScanDir(node, parentDir .. dirName .. "/", ext)
-            node:SetExpanded(true)
+    for k, item in pairs(sceneList) do
+        if istable(item) then
+            local tab = { [k] = item }
+            table.insert(folders, tab)
+        else
+            table.insert(files, item)
         end
     end
 
-    for _,fileName in ipairs(files) do
+    for _, item in pairs(folders) do
+        for folderName, folder in pairs(item) do
+            local node = parentNode:AddNode(folderName)
+
+            node.DoClick = function()
+                node:SetExpanded(not node:GetExpanded())
+            end
+
+            self:CreateNodes(node, parentDir .. folderName .. "/", folder)
+        end
+    end
+
+    for _, fileName in pairs(files) do
         local node = parentNode:AddNode(fileName)
-        local path = parentDir .. fileName
 
         node:SetIcon("icon16/page.png")
-        node.DoClick = function() RunConsoleCommand("npc_scene_scene", path) end
+        node.DoClick = function() RunConsoleCommand("npc_scene_scene", "scenes/" .. parentDir .. fileName) end
+    end
+end
+
+-- Scan for .vcds and folders in a folder
+function NPCS:ScanDir(parentDir, foundScenes)
+    if SERVER then return end
+
+    if not foundScenes then foundScenes = {} end
+
+    local files, dirs = file.Find(parentDir .. "*", "MOD")
+
+    for _, dirName in ipairs(dirs) do
+        foundScenes[dirName] = {}
+        self:ScanDir(parentDir .. dirName .. "/", foundScenes[dirName])
+    end
+
+    for _, fileName in ipairs(files) do
+        if string.GetExtensionFromFilename(fileName) == "vcd" then
+            table.insert(foundScenes, fileName)
+        end
     end 
+
+    return foundScenes
+end
+
+-- Build a scene list checking for mounted games and using our pre-made scene tables
+function NPCS:BuildPremandeSceneList()
+    local premadeSceneList = {}
+
+    for _, game in ipairs(engine.GetGames()) do
+        if game.mounted or game.title == "Half-Life 2" then
+            table.Merge(premadeSceneList, self.premadeSceneList[game.title])
+        end
+    end
+
+    return premadeSceneList
 end
 
 -- Open the scenes list
@@ -237,7 +277,6 @@ local function ListScenes()
             sceneListPanel:SetDeleteOnClose(false)
             sceneListPanel:SetVisible(false)
 
-
         local ctrl = vgui.Create("DTree", sceneListPanel)
             ctrl:SetPadding(5)
             ctrl:SetSize(width, height - 25)
@@ -245,7 +284,10 @@ local function ListScenes()
             ctrl:SetBackgroundColor(Color(255, 255, 255, 255))
 
         local node = ctrl:AddNode("Scenes! (click one to select)")
-            ScanDir(node, "scenes/", ".vcd")
+            local premadeSceneList = NPCS:BuildPremandeSceneList()
+            local foundSceneList = NPCS:ScanDir("scenes/")
+            table.Merge(foundSceneList, premadeSceneList)
+            NPCS:CreateNodes(node, "", foundSceneList)
             node:SetExpanded(true)
 
         initialized = true
