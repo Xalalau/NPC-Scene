@@ -252,7 +252,7 @@ function NPCS:BuildPremandeSceneList()
     local premadeSceneList = {}
 
     for _, game in ipairs(engine.GetGames()) do
-        if game.mounted or game.title == "Half-Life 2" then
+        if game.mounted and self.premadeSceneList[game.title] or game.title == "Half-Life 2" then
             table.Merge(premadeSceneList, self.premadeSceneList[game.title])
         end
     end
