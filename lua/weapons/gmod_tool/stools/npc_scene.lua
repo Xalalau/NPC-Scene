@@ -266,7 +266,7 @@ local sceneListPanel
 local function ListScenes()
     if SERVER then return end
 
-    --if not initialized then
+    if not initialized then
         local width, height = 300, 700
         local padding = 35
 
@@ -291,7 +291,7 @@ local function ListScenes()
             node:SetExpanded(true)
 
         initialized = true
-    --end
+    end
 
     sceneListPanel:SetVisible(true)
     sceneListPanel:MakePopup()
