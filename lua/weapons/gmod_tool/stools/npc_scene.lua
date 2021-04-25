@@ -205,7 +205,7 @@ function NPCS:RenderActorName(index)
 
             -- Draw
             cam.Start3D2D(pos, ang, scale)
-                draw.DrawText(text, "TargetID", 0, 0, Color(255, 255, 255, 255), TEXT_ALIGN_CENTER)
+                draw.DrawText(text, "TargetID", 0, 0, color_white, TEXT_ALIGN_CENTER)
             cam.End3D2D()
         end
     end
