@@ -140,11 +140,11 @@ function NPCS:PlayScene(ply, index)
 end
 
 -- Remove our modifications from the npc
-function NPCS:ReloadNPC(ply, npc)
+function NPCS:ReloadNPC(ply, npc, removeName)
     if CLIENT then return end
 
     local dup = {}
-    local name = npc.RenderOverride and npc:GetName()
+    local name = not removeName and npc.RenderOverride and npc:GetName()
 
     -- Change the entity
     local newNpc = duplicator.CreateEntityFromTable(ply, duplicator.CopyEntTable(npc))
@@ -433,7 +433,7 @@ function TOOL:Reload(tr)
     if npc:GetNWInt("npcscene_index") > 0 then
         if SERVER then
             timer.Stop(tostring(npc) .. npc:GetNWInt("npcscene_index"))
-            NPCS:ReloadNPC(ply, npc)
+            NPCS:ReloadNPC(ply, npc, true)
         end
 
         return true
