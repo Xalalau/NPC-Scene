@@ -31,6 +31,24 @@ if CLIENT then
     language.Add("Tool.npc_scene.left", "Left click to play the scene.")
     language.Add("Tool.npc_scene.right", "Right click to set the actor name.")
     language.Add("Tool.npc_scene.reload", "Reload to stop the scene.")
+
+    surface.CreateFont("NPCS_TargetID", {
+        font = "TargetID",
+        extended = false,
+        size = 20,
+        weight = 1000,
+        blursize = 0,
+        scanlines = 0,
+        antialias = true,
+        underline = false,
+        italic = false,
+        strikeout = false,
+        symbol = false,
+        rotary = false,
+        shadow = true,
+        additive = false,
+        outline = false,
+    })
 end
 
 -- --------------
@@ -144,7 +162,7 @@ function NPCS:ReloadNPC(ply, npc, removeName)
     if CLIENT then return end
 
     local dup = {}
-    local name = not removeName and npc.RenderOverride and npc:GetName()
+    local name = not removeName and npc:GetNWString("npcscene_actor")
 
     -- Change the entity
     local newNpc = duplicator.CreateEntityFromTable(ply, duplicator.CopyEntTable(npc))
@@ -163,8 +181,8 @@ function NPCS:ReloadNPC(ply, npc, removeName)
             actor = name
         }
 
-        newNpc.RenderOverride = true
         newNpc:SetName(name)
+
         self:SetNWVars(newNpc, sceneData)
 
         timer.Simple(0.5, function()
@@ -177,38 +195,51 @@ function NPCS:ReloadNPC(ply, npc, removeName)
     return newNpc
 end
 
--- Render NPC names over their heads
+-- Render actor names
 function NPCS:RenderActorName(index)
     if SERVER then return end
 
     local npc = ents.GetByIndex(index)
 
-    npc.RenderOverride = function(self)
-        self:DrawModel()
+    if not npc then return end
+
+    local hookName = "NPCScene_ActorName" .. tostring(npc) .. math.random(1, 999)
+
+    hook.Add("HUDPaint", hookName, function()
+        if not npc:IsValid() then return hook.Remove("HUDPaint", hookName) end
 
         if GetConVar("npc_scene_render"):GetBool() then
-            -- The text to display
-            local text = self:GetNWString("npcscene_actor")
+            -- Actor name
+            local actorName = npc:GetNWString("npcscene_actor")
 
-            if not text then return end
+            if not actorName then return end
 
-            if LocalPlayer():GetPos():Distance(self:GetPos()) > 300 then return end
+            -- Distance
+            local distance = LocalPlayer():GetPos():Distance(npc:GetPos())
 
-            -- Use model bounds to make the text appear just above the npc
-            local mins, maxs = self:GetModelBounds()
-            local pos = self:GetPos() + Vector(0, 0, maxs.z + 7)
-            local scale = 0.4
+            if distance > 300 then return end
 
-            -- The angle
-            local ang = Angle(0, EyeAngles().y + 90, 90)
-            ang:RotateAroundAxis(Vector(0, 0, 1), 180)
+            local head = npc:LookupBone("ValveBiped.Bip01_Head1")
+            local up = Vector(0, 0, 17 * distance/300)
+
+            -- NPCs
+            if head then
+                local headpos, headang = npc:GetBonePosition(head)
+                headpos = headpos + up
+                drawposscreen = (headpos + Vector(0, 0, 10)):ToScreen()
+            -- Props
+            else
+                local mins, maxs = npc:GetModelBounds()
+                local pos = npc:GetPos() + Vector(0, 0, maxs.z + 7)
+                local min, max = npc:WorldSpaceAABB()
+                local drawpos = Vector(pos.x, pos.y, max.z) + up
+                drawposscreen = drawpos:ToScreen()
+            end
 
             -- Draw
-            cam.Start3D2D(pos, ang, scale)
-                draw.DrawText(text, "TargetID", 0, 0, color_white, TEXT_ALIGN_CENTER)
-            cam.End3D2D()
+            draw.DrawText(actorName, "NPCS_TargetID", drawposscreen.x, drawposscreen.y, color_white, TEXT_ALIGN_CENTER)
         end
-    end
+    end)
 end
 
 -- Scan for .vcds and folders in a folder
@@ -414,7 +445,6 @@ function TOOL:RightClick(tr)
     NPCS:SetNWVars(npc, sceneData)
 
     -- Render the name on the client
-    npc.RenderOverride = true
     net.Start("npc_scene_render_actor")
         net.WriteInt(sceneData.index or npc:GetNWInt("npcscene_index"), 16)
     net.Send(ply)
