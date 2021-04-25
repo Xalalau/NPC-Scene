@@ -111,6 +111,8 @@ function NPCS:PlayScene(ply, index)
     -- Play the scene and get its lenght
     local lenght = npc:PlayScene(npc:GetNWString("npcscene_path")) 
 
+    if not lenght then return end
+
     -- Set the next loops
     if npc:GetNWInt("npcscene_loop") > 0 then
         local index = npc:EntIndex()
