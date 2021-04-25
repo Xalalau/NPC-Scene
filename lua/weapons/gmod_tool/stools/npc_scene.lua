@@ -16,6 +16,7 @@ TOOL.ClientConVar["scene"] = "scenes/npc/Gman/gman_intro"
 TOOL.ClientConVar["actor"] = "Alyx"
 TOOL.ClientConVar["loop"] = 0
 TOOL.ClientConVar["key"] = 0
+TOOL.ClientConVar["start"] = 0
 TOOL.ClientConVar["multiple"] = 0
 TOOL.ClientConVar["render"] = 1
 TOOL.Information = {
@@ -351,21 +352,24 @@ function TOOL:LeftClick(tr)
         active = false,
         index  = npc:EntIndex(),
         loop   = self:GetClientNumber("loop"),
-        path  = path,
-        actor   = actor,
+        path   = path,
+        actor  = actor,
         key    = self:GetClientNumber("key"),
+        start  = self:GetClientNumber("start") == 1 and true or false,
     }
 
     NPCS:SetNWVars(npc, sceneData)
 
-    -- Play the scene
-    if sceneData.key == 0 then
-        NPCS:PlayScene(ply, sceneData.index)
     -- Prepare the scene to be played by key
-    else
+    if sceneData.key != 0 then
         net.Start("npc_scene_hook_key")
             net.WriteInt(sceneData.index, 16)
         net.Send(ply)
+    end
+    
+    -- Play the scene
+    if sceneData.start or sceneData.key == 0 then
+        NPCS:PlayScene(ply, sceneData.index)
     end
 
     return true
@@ -431,6 +435,7 @@ function TOOL.BuildCPanel(CPanel)
     end
     CPanel:AddControl ("Slider"  , { Label = "Loop", Type = "int", Min = "0", Max = "100", Command = "npc_scene_loop"})
     CPanel:AddControl ("CheckBox", { Label = "Allow to apply scene multiple times", Command = "npc_scene_multiple" })
+    CPanel:AddControl ("CheckBox", { Label = "Start On (When using a key)", Command = "npc_scene_start" })
     CPanel:AddControl ("CheckBox", { Label = "Render actor names", Command = "npc_scene_render" })
     CPanel:Help       ("")
     CPanel:AddControl ("Button" , { Text  = "List Scenes", Command = "npc_scene_list" })
