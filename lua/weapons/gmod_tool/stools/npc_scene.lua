@@ -143,6 +143,7 @@ function NPCS:ReloadNPC(ply, npc)
 
     -- Use the duplicator to reset the states and create an effect
     local dup = {}
+    local setName = npc.RenderOverride and true
 
     dup = duplicator.Copy(npc)
     SafeRemoveEntity(npc)
@@ -154,6 +155,16 @@ function NPCS:ReloadNPC(ply, npc)
         undo.AddEntity(npc)
         undo.SetPlayer(ply)
     undo.Finish()
+
+    if setName then
+        npc.RenderOverride = true
+        local index = npc:EntIndex()
+        timer.Simple(0.5, function()
+            net.Start("npc_scene_render_actor")
+                net.WriteInt(index, 16)
+            net.Send(ply)
+        end)
+    end
 
     return npc
 end
@@ -394,6 +405,7 @@ function TOOL:RightClick(tr)
     NPCS:SetNWVars(npc, sceneData)
 
     -- Render the name on the client
+    npc.RenderOverride = true
     net.Start("npc_scene_render_actor")
         net.WriteInt(sceneData.index or npc:GetNWInt("npcscene_index"), 16)
     net.Send(ply)
