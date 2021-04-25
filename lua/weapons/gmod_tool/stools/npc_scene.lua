@@ -306,9 +306,9 @@ end
 -- Toolgun
 -- --------------
 
-local function toolGunChecks(tr)
+local function toolGunChecks(tr, anyEnt)
     -- Check if we're modifying a NPC
-    if not (tr.Hit and tr.Entity and tr.Entity:IsValid() and tr.Entity:IsNPC()) then
+    if not (tr.Hit and tr.Entity and tr.Entity:IsValid() and (anyEnt or tr.Entity:IsNPC())) then
         return false
     end
 
@@ -377,7 +377,7 @@ end
 
 -- Set an actor name
 function TOOL:RightClick(tr)
-    if not toolGunChecks(tr) then return false end
+    if not toolGunChecks(tr, true) then return false end
     if CLIENT then return true end
 
     local ply = self:GetOwner()    
@@ -403,7 +403,7 @@ end
 
 -- Clear modifications
 function TOOL:Reload(tr)
-    if not toolGunChecks(tr) then return false end
+    if not toolGunChecks(tr, true) then return false end
 
     local ply = self:GetOwner()
     local npc = tr.Entity
