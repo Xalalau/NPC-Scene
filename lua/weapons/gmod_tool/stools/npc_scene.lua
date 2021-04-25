@@ -143,32 +143,38 @@ end
 function NPCS:ReloadNPC(ply, npc)
     if CLIENT then return end
 
-    -- Use the duplicator to reset the states and create an effect
     local dup = {}
-    local setName = npc.RenderOverride and true
+    local name = npc.RenderOverride and npc:GetName()
 
-    dup = duplicator.Copy(npc)
+    -- Change the entity
+    local newNpc = duplicator.CreateEntityFromTable(ply, duplicator.CopyEntTable(npc))
     SafeRemoveEntity(npc)
-    duplicator.Paste(ply, dup.Entities, dup.Constraints)
 
-    npc = ply:GetEyeTrace().Entity
-
+    -- Add undo
     undo.Create("NPC")
-        undo.AddEntity(npc)
+        undo.AddEntity(newNpc)
         undo.SetPlayer(ply)
     undo.Finish()
 
-    if setName then
-        npc.RenderOverride = true
-        local index = npc:EntIndex()
+    -- Reapply the name
+    if name then
+        local sceneData = {
+            index = newNpc:EntIndex(),
+            actor = name
+        }
+
+        newNpc.RenderOverride = true
+        newNpc:SetName(name)
+        self:SetNWVars(newNpc, sceneData)
+
         timer.Simple(0.5, function()
             net.Start("npc_scene_render_actor")
-                net.WriteInt(index, 16)
+                net.WriteInt(sceneData.index, 16)
             net.Send(ply)
         end)
     end
 
-    return npc
+    return newNpc
 end
 
 -- Render NPC names over their heads
@@ -185,6 +191,7 @@ function NPCS:RenderActorName(index)
             local text = self:GetNWString("npcscene_actor")
 
             if not text then return end
+
             if LocalPlayer():GetPos():Distance(self:GetPos()) > 300 then return end
 
             -- Use model bounds to make the text appear just above the npc
