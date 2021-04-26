@@ -121,7 +121,7 @@ function NPCS:PlayScene(ply, index)
     local multiple = ply:GetInfo("npc_scene_multiple") == "1" and true or false
     local npc = ents.GetByIndex(index)
 
-    -- When a animation is running only start more animations if the "multiple" checkbox is checked
+    -- When an animation is running only start more animations if the "multiple" checkbox is checked
     if npc:GetNWBool("npcscene_active") and not multiple then return end
 
     npc:SetNWBool("npcscene_active", true)
