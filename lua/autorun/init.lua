@@ -6,11 +6,10 @@ NPCS = {
 
 local function includeLibs(dir, isClientLib)
     local files, dirs = file.Find( dir.."*", "LUA" )
-print(dir)
+
     if not dirs then return end
 
     for _, fdir in pairs(dirs) do
-        print(dir)
         includeLibs(dir .. fdir .. "/", isClientLib)
     end
 
