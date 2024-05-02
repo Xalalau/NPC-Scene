@@ -133,16 +133,16 @@ function NPCS:PlayScene(ply, index)
 
     -- Set the next loops
     if npc:GetNWInt("npcscene_loop") > 0 then
-        local index = npc:EntIndex()
+        local index = tostring(npc) .. npc:EntIndex()
 
-        timer.Create(tostring(npc) .. index, lenght, npc:GetNWInt("npcscene_loop"), function()
+        timer.Create(index, lenght, npc:GetNWInt("npcscene_loop"), function()
             -- Invalid ent, stop the loop
-            if not npc:IsValid() then
-                timer.Stop(tostring(npc) .. index)
+            if not IsValid(npc) then
+                timer.Stop(index)
             -- Last loop
             elseif npc:GetNWInt("npcscene_loop") == 0 then
                 npc:SetNWBool("npcscene_active", false)
-                timer.Stop(tostring(npc) .. index)
+                timer.Stop(index)
             -- An execution in the sequence, there are more to do
             else
                 npc:PlayScene(npc:GetNWString("npcscene_path"))
@@ -152,6 +152,7 @@ function NPCS:PlayScene(ply, index)
     -- Set the animation as finished
     else
         timer.Simple(lenght, function()
+            if not IsValid(npc) then return end
             npc:SetNWBool("npcscene_active", false)
         end)
     end
@@ -186,6 +187,8 @@ function NPCS:ReloadNPC(ply, npc, removeName)
         self:SetNWVars(newNpc, sceneData)
 
         timer.Simple(0.5, function()
+            if not IsValid(ply) then return end
+
             net.Start("npc_scene_render_actor")
                 net.WriteInt(sceneData.index, 16)
             net.Send(ply)
