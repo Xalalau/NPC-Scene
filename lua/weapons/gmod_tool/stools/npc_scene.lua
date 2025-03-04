@@ -452,11 +452,17 @@ function TOOL:RightClick(tr)
 
     local ply = self:GetOwner()    
     local npc = tr.Entity
+    local oldName = npc:GetNWString("npcscene_actor")
+    local newName = self:GetClientInfo("actor")
+
+    if oldName == newName then
+        return false
+    end
 
     -- Add the name to the entity
     local sceneData = {
         index = npc:GetNWInt("npcscene_index") == 0 and npc:EntIndex() or nil,
-        actor = self:GetClientInfo("actor")
+        actor = newName
     }
 
     npc:SetName(sceneData.actor)
