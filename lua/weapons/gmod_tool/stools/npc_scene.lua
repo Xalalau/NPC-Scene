@@ -321,7 +321,7 @@ function NPCS:BuildPremandeSceneList()
             if game.title == "Half-Life 2 & Episodes" then
                 table.Merge(premadeSceneList, self.premadeSceneList["Half-Life 2: Episode 2"])
                 table.Merge(premadeSceneList, self.premadeSceneList["Half-Life 2: Episode 1"])
-                table.Merge(premadeSceneList, self.premadeSceneList["lostcoast"]) -- Not sure if it's included in the HL Anniversary update
+                table.Merge(premadeSceneList, self.premadeSceneList["Half-Life 2: Lost Coast"]) -- Not sure if it's included in the HL Anniversary update
             elseif self.premadeSceneList[game.title] then
                 table.Merge(premadeSceneList, self.premadeSceneList[game.title])
             end
