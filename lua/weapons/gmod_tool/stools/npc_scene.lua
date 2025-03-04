@@ -306,9 +306,17 @@ end
 function NPCS:BuildPremandeSceneList()
     local premadeSceneList = {}
 
+    table.Merge(premadeSceneList, self.premadeSceneList["Half-Life 2"])
+
     for _, game in ipairs(engine.GetGames()) do
-        if game.mounted and self.premadeSceneList[game.title] or game.title == "Half-Life 2" then
-            table.Merge(premadeSceneList, self.premadeSceneList[game.title])
+        if game.mounted then
+            if game.title == "Half-Life 2 & Episodes" then
+                table.Merge(premadeSceneList, self.premadeSceneList["Half-Life 2: Episode 2"])
+                table.Merge(premadeSceneList, self.premadeSceneList["Half-Life 2: Episode 1"])
+                table.Merge(premadeSceneList, self.premadeSceneList["lostcoast"]) -- Not sure if it's included in the HL Anniversary update
+            elseif self.premadeSceneList[game.title] then
+                table.Merge(premadeSceneList, self.premadeSceneList[game.title])
+            end
         end
     end
 
