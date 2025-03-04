@@ -14,6 +14,7 @@ TOOL.Command = nil
 TOOL.ConfigName = ""
 TOOL.ClientConVar["scene"] = "scenes/npc/Gman/gman_intro"
 TOOL.ClientConVar["actor"] = "Alyx"
+TOOL.ClientConVar["remove_actor_name_on_reload"] = 0
 TOOL.ClientConVar["loop"] = 0
 TOOL.ClientConVar["key"] = 0
 TOOL.ClientConVar["start"] = 0
@@ -159,11 +160,18 @@ function NPCS:PlayScene(ply, index)
 end
 
 -- Remove our modifications from the npc
-function NPCS:ReloadNPC(ply, npc, removeName)
+function NPCS:ReloadNPC(ply, npc, removeActorName)
     if CLIENT then return end
 
+    local scenePath = npc:GetNWString("npcscene_path")
+    local actorName = not removeActorName and npc:GetNWString("npcscene_actor")
+
+    if removeActorName and actorName != "" then
+    elseif scenePath == "" then
+        return npc
+    end
+
     local dup = {}
-    local name = not removeName and npc:GetNWString("npcscene_actor")
 
     -- Change the entity
     local newNpc = duplicator.CreateEntityFromTable(ply, duplicator.CopyEntTable(npc))
@@ -176,13 +184,13 @@ function NPCS:ReloadNPC(ply, npc, removeName)
     undo.Finish()
 
     -- Reapply the name
-    if name then
+    if actorName then
         local sceneData = {
             index = newNpc:EntIndex(),
-            actor = name
+            actor = actorName
         }
 
-        newNpc:SetName(name)
+        newNpc:SetName(actorName)
 
         self:SetNWVars(newNpc, sceneData)
 
@@ -473,8 +481,13 @@ function TOOL:Reload(tr)
     -- Stop any loops and reload the NPC
     if npc:GetNWInt("npcscene_index") > 0 then
         if SERVER then
+            local keepActorName = GetConVar("npc_scene_remove_actor_name_on_reload"):GetBool()
             timer.Stop(tostring(npc) .. npc:GetNWInt("npcscene_index"))
-            NPCS:ReloadNPC(ply, npc, true)
+            newNpc = NPCS:ReloadNPC(ply, npc, keepActorName)
+
+            if npc == newNpc then
+                return false
+            end
         end
 
         return true
@@ -499,6 +512,7 @@ function TOOL.BuildCPanel(CPanel)
     CPanel:AddControl ("CheckBox", { Label = "Allow to apply scene multiple times", Command = "npc_scene_multiple" })
     CPanel:AddControl ("CheckBox", { Label = "Start On (When using a key)", Command = "npc_scene_start" })
     CPanel:AddControl ("CheckBox", { Label = "Render actor names", Command = "npc_scene_render" })
+    CPanel:AddControl ("CheckBox", { Label = "Remove actor name on reload", Command = "npc_scene_remove_actor_name_on_reload" })
     CPanel:Help       ("")
     CPanel:AddControl ("Button" , { Text  = "List Scenes", Command = "npc_scene_list" })
 end
